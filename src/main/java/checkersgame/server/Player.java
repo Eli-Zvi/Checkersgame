@@ -10,7 +10,7 @@ import java.util.UUID;
 public class Player {
 
     private String name;
-    private UUID playerUUID;
+    private UUID playerUUID, gameUUID;
     private final IClientCallBack callBack;
     private boolean isLoggedIn = false;
     private final SecretKey key;
@@ -42,6 +42,10 @@ public class Player {
         return key;
     }
 
+    public UUID getGameUUID(){
+        return gameUUID;
+    }
+
     public void setName(String username){
         if(this.name == null)
             this.name = username;
@@ -54,5 +58,9 @@ public class Player {
 
     public void setLoggedIn(boolean loggedIn) {
         this.isLoggedIn = loggedIn;
+    }
+
+    public void setGameUUID(UUID gameUUID){
+        this.gameUUID = gameUUID;
     }
 }

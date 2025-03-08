@@ -26,10 +26,9 @@ public class Client{
     private final CallBackImpl callback;
     private Registry registry;
     private static Client client;
-    private String gameID;
+    private String gameID, username;
     private boolean isLoggedIn = false;
     private UUID uuid;
-    private String username;
     private final SecretKey key;
 
     /**
