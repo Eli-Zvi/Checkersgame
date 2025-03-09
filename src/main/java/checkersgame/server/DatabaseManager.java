@@ -2,6 +2,8 @@ package checkersgame.server;
 
 import checkersgame.common.FinishedGame;
 import checkersgame.common.MoveInfo;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -12,47 +14,65 @@ import java.util.UUID;
 
 //TODO ADD LOCKS AND DOCUMENTATION
 
-public class DatabaseManager { //add locks
+public class DatabaseManager {
 
-    private Connection connection = null;
-    private static DatabaseManager instance = null;
+    private static HikariDataSource ds;
+    private static DatabaseManager instance;
 
+    //username and password are not safe - only meant as an example
     private DatabaseManager() throws SQLException {
+        HikariConfig config = new HikariConfig();
+
+        config.setJdbcUrl("jdbc:mysql://localhost:3306/checkersgame");
+        config.setUsername("root");
+        config.setPassword("root");
+
+        config.setMaximumPoolSize(20);
+        config.setIdleTimeout(30000); //30 seconds
+
+        ds = new HikariDataSource(config);
+
+        initializeDatabase();
+    }
+
+    private void initializeDatabase() throws SQLException{
+        Connection connection = null;
+
         try {
-            //username and password are not safe - only meant as an example
-            String url = "jdbc:mysql://localhost:3306/checkersgame";
-            String username = "root";
-            String password = "root";
-            connection = DriverManager.getConnection(url, username, password); // Establish connection
+            connection = getConnection();
             connection.setAutoCommit(false);
-            createTables();
-            String setOffline = "UPDATE PLAYERS SET LOGGED_IN = FALSE";
+
+            createTables(connection);
+
             try(Statement stmt = connection.createStatement()) {
+                String setOffline = "UPDATE PLAYERS SET LOGGED_IN = FALSE";
                 stmt.executeUpdate(setOffline);
+
             }
 
             connection.commit();
-        } catch (SQLException e) {
-            System.out.println("DB connection failed to establish");
-            connection.rollback();
-            e.printStackTrace();
+            System.out.println("DB connection established successfully");
+        }catch (SQLException e){
+            System.out.println("connection failed to initialize");
+            if (connection != null)
+                connection.rollback();
+
             throw e;
         }
-        connection.setAutoCommit(true);
-        System.out.println("DB connection established successfully");
     }
 
-    public static void initializeInstance() throws SQLException {
+    public synchronized static DatabaseManager getInstance() throws SQLException{
         if (instance == null) {
             instance = new DatabaseManager();
         }
-    }
-
-    public synchronized static DatabaseManager getInstance(){
         return instance;
     }
 
-    public synchronized void createTables() throws SQLException {
+    public Connection getConnection() throws SQLException {
+        return ds.getConnection();
+    }
+
+    private static synchronized void createTables(Connection connection) throws SQLException {
         String createPlayersTable = "CREATE TABLE IF NOT EXISTS PLAYERS (" +
                 "UUID CHAR(36) PRIMARY KEY, " + // UUID is 16 bytes -> 36 bytes as string form
                 "USERNAME VARCHAR(16) NOT NULL UNIQUE, " + // allowing user upto 16 char long username
@@ -88,15 +108,16 @@ public class DatabaseManager { //add locks
                 "UNIQUE(GAME_ID, MOVE_NUMBER)" +
                 ")";
 
-        Statement statement = connection.createStatement();
-        statement.addBatch(createPlayersTable);
-        statement.addBatch(createGamesTable);
-        statement.addBatch(createMoveTable);
+        try(Statement statement = connection.createStatement()) {
+            statement.addBatch(createPlayersTable);
+            statement.addBatch(createGamesTable);
+            statement.addBatch(createMoveTable);
 
-        statement.executeBatch();
+            statement.executeBatch();
+        }
     }
 
-    public synchronized void addPlayer(UUID uuid, String username, String password) throws SQLException,
+    public synchronized void addPlayer(Connection connection, UUID uuid, String username, String password) throws SQLException,
             NoSuchAlgorithmException, InvalidKeySpecException {
         String salt = PasswordUtils.generateSalt();
         byte[] hashedPass = PasswordUtils.hashPassword(password, salt);
@@ -112,36 +133,53 @@ public class DatabaseManager { //add locks
         }
     }
 
-    public synchronized UUID verifyLogin(String username, String password) throws SQLException, NoSuchAlgorithmException,
-            InvalidKeySpecException {
-        String selectPlayer = "SELECT UUID, PASSWORD, SALT, LOGGED_IN FROM PLAYERS WHERE USERNAME = ?";
-        PreparedStatement statement = connection.prepareStatement(selectPlayer);
-        statement.setString(1, username);
-        ResultSet resultSet = statement.executeQuery();
-        if(resultSet.next() && !resultSet.getBoolean("LOGGED_IN")) {
-            String salt = resultSet.getString("SALT");
-            byte[] hashedPassword = resultSet.getBytes("PASSWORD");
-            if (PasswordUtils.verifyPassword(password, hashedPassword, salt)) {
-                UUID uuid = UUID.fromString(resultSet.getString("UUID"));
-                String updateWins = "UPDATE PLAYERS SET LOGGED_IN = TRUE WHERE UUID= ?";
-                PreparedStatement winsStatement = connection.prepareStatement(updateWins);
-                winsStatement.setString(1, uuid.toString());
-                winsStatement.executeUpdate();
-                return uuid;
+    public UUID verifyLogin(Connection connection, String username, String password) throws SQLException,
+            NoSuchAlgorithmException, InvalidKeySpecException {
+
+        connection.setAutoCommit(false);
+
+        try {
+            String selectPlayer = "SELECT UUID, PASSWORD, SALT, LOGGED_IN FROM PLAYERS WHERE USERNAME = ? FOR UPDATE";
+
+            PreparedStatement statement = connection.prepareStatement(selectPlayer);
+            statement.setString(1, username);
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next() && !resultSet.getBoolean("LOGGED_IN")) {
+                String salt = resultSet.getString("SALT");
+                byte[] hashedPassword = resultSet.getBytes("PASSWORD");
+
+                if (PasswordUtils.verifyPassword(password, hashedPassword, salt)) {
+                    UUID uuid = UUID.fromString(resultSet.getString("UUID"));
+                    String updateLogin = "UPDATE PLAYERS SET LOGGED_IN = TRUE WHERE UUID= ?";
+                    PreparedStatement winsStatement = connection.prepareStatement(updateLogin);
+                    winsStatement.setString(1, uuid.toString());
+                    winsStatement.executeUpdate();
+                    connection.commit();
+                    return uuid;
+                }
             }
+            throw new SQLException("Invalid username or password");
+        } finally {
+            connection.setAutoCommit(true);
         }
-        throw new SQLException();
     }
 
-    public synchronized void addGame(UUID gameUUID, UUID player1UUID, UUID player2UUID) throws SQLException { //probably add autocommit off
+    public void addGame(Connection connection, UUID gameUUID, UUID player1UUID, UUID player2UUID)
+            throws SQLException {
+
         String addGame = "INSERT INTO GAMES (ID, PLAYER1_UUID, PLAYER2_UUID, STATUS, WINNER_UUID) " +
                 "VALUES (?, ?, ?, FALSE, NULL)";
-        String updateWins = "UPDATE PLAYERS SET STATUS = TRUE WHERE UUID= ?";
-        String updateLosses = "UPDATE PLAYERS SET STATUS = TRUE WHERE UUID= ?";
+        String updateStatus1 = "UPDATE PLAYERS SET STATUS = TRUE WHERE UUID= ?";
+        String updateStatus2 = "UPDATE PLAYERS SET STATUS = TRUE WHERE UUID= ?";
+
+        connection.setAutoCommit(false);
 
         try(PreparedStatement statement = connection.prepareStatement(addGame);
-            PreparedStatement winsStatement = connection.prepareStatement(updateWins);
-            PreparedStatement lossStatement = connection.prepareStatement(updateLosses)) {
+            PreparedStatement winsStatement = connection.prepareStatement(updateStatus1);
+            PreparedStatement lossStatement = connection.prepareStatement(updateStatus2)) {
+
+            lockPlayers(connection, player1UUID, player2UUID);
 
             statement.setString(1, gameUUID.toString());
             statement.setString(2, player1UUID.toString());
@@ -153,18 +191,30 @@ public class DatabaseManager { //add locks
 
             lossStatement.setString(1, player2UUID.toString());
             lossStatement.executeUpdate();
+
+            connection.commit();
+        }catch (SQLException e){
+            connection.rollback();
+            throw e;
+        }finally {
+            connection.setAutoCommit(true);
+
         }
     }
 
-    //add select methods, get wins/losses and increment them according to win/loss
-    public synchronized void updateGame(UUID gameID, UUID winner, UUID loser) throws SQLException {
+
+    public void updateGame(Connection connection, UUID gameID, UUID winner, UUID loser) throws SQLException {
         String updateGame = "UPDATE GAMES SET STATUS = TRUE, WINNER_UUID = ? WHERE ID = ?";
         String updateWins = "UPDATE PLAYERS SET STATUS = FALSE, WINS = WINS + 1 WHERE UUID= ?";
         String updateLosses = "UPDATE PLAYERS SET STATUS = FALSE, LOSSES = LOSSES + 1 WHERE UUID= ?";
 
+        connection.setAutoCommit(false);
+
         try(PreparedStatement gameUpdateStatement = connection.prepareStatement(updateGame);
             PreparedStatement winsStatement = connection.prepareStatement(updateWins);
             PreparedStatement lossStatement = connection.prepareStatement(updateLosses)) {
+
+            lockPlayers(connection, winner, loser);
 
             gameUpdateStatement.setString(1, winner.toString());
             gameUpdateStatement.setString(2, gameID.toString());
@@ -177,10 +227,29 @@ public class DatabaseManager { //add locks
 
             lossStatement.setString(1, loser.toString());
             lossStatement.executeUpdate();
+            connection.commit();
+        }catch (SQLException e){
+            connection.rollback();
+            throw e;
+        }finally {
+            connection.setAutoCommit(true);
         }
     }
 
-    public synchronized int addMove(UUID gameID, UUID player, int moveNumber, LinkedList<MoveInfo> move, boolean promotion) throws SQLException {
+    public void lockPlayers(Connection connection, UUID player1, UUID player2) throws SQLException{
+
+        String lockPlayer = "SELECT * FROM PLAYERS WHERE UUID= ? OR UUID= ? FOR UPDATE";
+
+        try(PreparedStatement lockStatement = connection.prepareStatement(lockPlayer)){
+            lockStatement.setString(1, player1.toString());
+            lockStatement.setString(2, player2.toString());
+            lockStatement.executeQuery();
+        }
+    }
+
+    public int addMove(Connection connection, UUID gameID, UUID player, int moveNumber,
+                                    LinkedList<MoveInfo> move, boolean promotion) throws SQLException {
+
         String addMove = "INSERT INTO MOVES (GAME_ID, MOVE_NUMBER, PLAYER_UUID, FROM_POSITION, TO_POSITION, PROMOTION) " +
                 "VALUES ( ?, ?, ?, ?, ?, ?)";
         try(PreparedStatement statement = connection.prepareStatement(addMove)) {
@@ -192,14 +261,16 @@ public class DatabaseManager { //add locks
                 statement.setString(4, moveInfo.currentRow() + "," + moveInfo.currentCol());
                 statement.setString(5, moveInfo.newRow() + "," + moveInfo.newCol());
                 statement.setBoolean(6, promotion);
-                statement.executeUpdate();
+                statement.addBatch();
             }
+
+            statement.executeBatch();
 
             return moveNumber;
         }
     }
 
-    public synchronized String getPlayerWinRate(UUID playerID) throws SQLException {
+    public String getPlayerWinRate(Connection connection, UUID playerID) throws SQLException {
         String selectPlayer = "SELECT WINS, LOSSES FROM PLAYERS WHERE UUID = ?";
         try(PreparedStatement statement = connection.prepareStatement(selectPlayer)) {
             statement.setString(1, playerID.toString());
@@ -211,8 +282,11 @@ public class DatabaseManager { //add locks
         return null;
     }
 
-    public synchronized ArrayList<LinkedList<MoveInfo>> getGamesMoves(UUID gameID) throws SQLException { //make sure to check that the game is over first
+    public ArrayList<LinkedList<MoveInfo>> getGamesMoves(Connection connection, UUID gameID)
+            throws SQLException { //make sure to check that the game is over first
+
         String selectMoves = "SELECT FROM_POSITION, TO_POSITION FROM MOVES WHERE GAME_ID = ?";
+
         try(PreparedStatement statement = connection.prepareStatement(selectMoves)) {
             statement.setString(1, gameID.toString());
             ResultSet resultSet = statement.executeQuery();
@@ -226,7 +300,11 @@ public class DatabaseManager { //add locks
 
                 while (resultSet.next()) {
                     move = MoveInfo.fromString(resultSet.getString("FROM_POSITION"), resultSet.getString("TO_POSITION"));
-                    assert move != null;
+
+                    if(move == null) {
+                        return null;
+                    }
+
                     if (temp.getLast().newRow() == move.currentRow() && temp.getLast().newCol() == move.currentCol()) {
                         temp.add(move);
                     } else {
@@ -244,8 +322,9 @@ public class DatabaseManager { //add locks
         }
     }
 
-    public synchronized String getPlayerName(String uuid){
+    public String getPlayerName(Connection connection, String uuid){
         String getPlayer = "SELECT USERNAME FROM PLAYERS WHERE UUID = ?";
+
         try(PreparedStatement statement = connection.prepareStatement(getPlayer)){
             statement.setString(1, uuid);
             ResultSet resultSet = statement.executeQuery();
@@ -258,26 +337,23 @@ public class DatabaseManager { //add locks
         }
     }
 
-    public synchronized ArrayList<FinishedGame> getFinishedGameIDs()throws SQLException{
+    public ArrayList<FinishedGame> getFinishedGameIDs(Connection connection)throws SQLException{
         String selectMoves = "SELECT ID, PLAYER1_UUID, PLAYER2_UUID, WINNER_UUID FROM GAMES WHERE STATUS = 1";
+
         try(Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(selectMoves);
             ArrayList<FinishedGame> idList = new ArrayList<>();
 
             while(resultSet.next()){
                 idList.add(new FinishedGame(UUID.fromString(resultSet.getString("ID")),
-                        getPlayerName(resultSet.getString("PLAYER1_UUID")),
-                        getPlayerName(resultSet.getString("PLAYER2_UUID")),
-                        getPlayerName(resultSet.getString("WINNER_UUID"))
+                        getPlayerName(connection, resultSet.getString("PLAYER1_UUID")),
+                        getPlayerName(connection, resultSet.getString("PLAYER2_UUID")),
+                        getPlayerName(connection, resultSet.getString("WINNER_UUID"))
                 ));
             }
             if (!idList.isEmpty())
                 return idList;
         }
         throw new SQLException();
-    }
-
-    public static void main(String[] args) throws SQLException {
-        initializeInstance();
     }
 }

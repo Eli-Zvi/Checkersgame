@@ -54,7 +54,6 @@ public class RegisterController {
         if(!nameLoginField.getText().isEmpty() && !passLoginField.getText().isEmpty() && !Client.getInstance().isLoggedIn()){
             String username = nameLoginField.getText().toLowerCase();
             String password = passLoginField.getText();
-            System.out.println(username + " " + password);
             clearLoginFields();
             if (username.length() > 7 && password.length() > 7 && password.length() < 17 && username.length() < 17){
                 Client client = Client.getInstance();
@@ -116,7 +115,7 @@ public class RegisterController {
                     client.setUsername(username);
                     disableAll();
                     alert(Alert.AlertType.INFORMATION,
-                            "Successful registration and login",
+                            "Successful registration and login!",
                             "Logged in with username: " + username).showAndWait().ifPresent(response -> {
                         try {
                             homeSceneSwitch(null);
