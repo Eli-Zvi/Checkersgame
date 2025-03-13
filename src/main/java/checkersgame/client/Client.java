@@ -9,6 +9,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.UUID;
 //TODO IMPROVE SINGLETONS INSTEAD OF USING INITIALIZE AND GET JUST USE GET THAT USES INITIALIZE, ADD SYNCHRO
 /**
@@ -39,11 +40,12 @@ public class Client{
      * @throws RemoteException - if there is an issue connecting to the RMI registry.
      * @throws GeneralSecurityException - if failure occurs during key creation
      */
-    private Client() throws RemoteException, GeneralSecurityException {
+    private Client() throws RemoteException, GeneralSecurityException { //TODO IMPLEMENT RETRY CREATE FUNCTIONS FOR EACH STUB CONNECTION
         while(registry == null) { //establish connection with server
             try {
                 registry = LocateRegistry.getRegistry("localhost", 1099);
-            }catch (RemoteException ignored){}
+            }catch (RemoteException ignored){
+            }
         }
 
         while(homeStub == null) { //establish connection with landing page

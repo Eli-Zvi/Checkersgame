@@ -75,7 +75,7 @@ public class ReplayController {
             ObservableList<FinishedGame> list = FXCollections.observableArrayList(gameStrings);
             gameList.setItems(list);
 
-            gameList.setCellFactory(new Callback<>() { //TODO read more about everything
+            gameList.setCellFactory(new Callback<>() {
                 @Override
                 public ListCell<FinishedGame> call(ListView<FinishedGame> param) {
                     return new ListCell<>() {

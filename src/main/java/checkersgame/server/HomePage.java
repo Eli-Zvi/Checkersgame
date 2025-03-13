@@ -2,10 +2,9 @@ package checkersgame.server;
 
 import checkersgame.common.*;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+
+import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
@@ -19,13 +18,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
-//TODO ADD DOCUMENTATION AND LOCKS AND HEARTBEAT AND NEW CLASS FOR USER MANAGEMENT
+//TODO ADD DOCUMENTATION AND HEARTBEAT
 public class HomePage extends UnicastRemoteObject implements IHomePage {
     private static Registry registry = null;
     private final UserManager userManager;
     private final DatabaseManager databaseManager;
-    //private final ArrayList<CheckersGame> onGoingGames = new ArrayList<>(); <- make a map between player -> checkersgame
-    private final Queue<IClientCallBack> gameQueue = new ConcurrentLinkedQueue<>(); //change to player later
+    private final Map<UUID, CheckersGame> onGoingGames = new HashMap<>();
+    private final Queue<IClientCallBack> gameQueue = new ConcurrentLinkedQueue<>();
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
     private final ReentrantLock gameInitLock = new ReentrantLock();
@@ -40,11 +39,13 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
         privateKey = rsaPair.getPrivate();
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         executorService.submit(this::gameInitializer);
+        heartbeatMonitor();
     }
 
     @Override // add return so the user will have a "waiting" message
     public void joinGame(IClientCallBack client) throws RemoteException{
-        if(userManager.existsByCallback(client) && !gameQueue.contains(client)) {
+        if(userManager.existsByCallback(client) && !gameQueue.contains(client) &&
+                userManager.findByCallback(client).getGameUUID() == null) {
             gameQueue.offer(client);
         }
 
@@ -88,32 +89,69 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
            return;
        }
 
+       CheckersGame game = null;
        UUID gameID = UUID.randomUUID();
-       Player player1 = userManager.findByCallback(client1);
-       Player player2 = userManager.findByCallback(client2);
 
-        try(Connection connection = databaseManager.getConnection()) {
-            databaseManager.addGame(connection, gameID, player1.getPlayerUUID(), player2.getPlayerUUID());
+       UUID player1UUID = null, player2UUID = null;
 
-            CheckersGame game = new CheckersGame(player1, player2, gameID);
-            registry.rebind(gameID.toString(), game);
-            client1.sendGameID(gameID.toString());
-            client2.sendGameID(gameID.toString());
-            System.out.println("New game created ID: " + gameID + " " + player1.getName() + " vs " + player2.getName());
-            //onGoingGames.add(game);
-        }catch (SQLException | RemoteException e){
-            //TODO SEND CALLBACK TO CLIENT TO NOTIFY THEM THAT AN ERROR HAS OCCURRED DURING GAME INIT
-        }
+       try(Connection connection = databaseManager.getConnection()) {
+
+           Player player1 = userManager.findByCallback(client1);
+           Player player2 = userManager.findByCallback(client2);
+
+           game = new CheckersGame(player1, player2, gameID);
+           registry.rebind(gameID.toString(), game);
+
+           player1UUID = player1.getPlayerUUID();
+           player2UUID = player2.getPlayerUUID();
+           databaseManager.addGame(connection, gameID, player1UUID, player2UUID);
+
+           client1.sendGameID(gameID.toString());
+           client2.sendGameID(gameID.toString());
+
+           player1.setGameUUID(gameID);
+           player2.setGameUUID(gameID);
+
+           System.out.println("New game created ID: " + gameID + " " + player1.getUsername() + " vs " + player2.getUsername());
+           onGoingGames.put(gameID, game);
+       }catch (SQLException | RemoteException e){
+           boolean player1Disconnected = false;
+
+           try {
+               client1.sendHeartbeat();
+               gameQueue.offer(client1);
+           }catch (RemoteException ignored){
+               player1Disconnected = true;
+           }
+
+           try {
+               client2.sendHeartbeat();
+               gameQueue.offer(client2);
+           }catch (RemoteException ignored){
+           }
+
+           try {
+               if (game != null) {
+                   registry.unbind(gameID.toString());
+                   game = null;
+
+                   try(Connection connection = databaseManager.getConnection()){
+                       databaseManager.updateGame(connection, gameID,
+                               player1Disconnected ? player2UUID : player1UUID,
+                               player1Disconnected ? player1UUID : player2UUID);
+                   }catch (SQLException ignored){}
+               }
+           } catch (RemoteException | NotBoundException ignored){}
+       }
     }
 
     @Override
     public void registerCallBack(IClientCallBack client, String encryptedAESKey) throws RemoteException {
         try {
             SecretKey key = KeyUtils.rsaDecrypt(encryptedAESKey, privateKey);
-            Player player = new Player(null, null, client, key);
+            Player player = new Player(client, key);
             userManager.addClient(client, player);
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException |
-                 BadPaddingException e) {
+        } catch (GeneralSecurityException e) {
             throw new RuntimeException(e);
         }
     }
@@ -129,9 +167,7 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
             UUID uuid = UUID.randomUUID();
             try(Connection connection = databaseManager.getConnection()) {
                 databaseManager.addPlayer(connection, uuid, username, password.decrypt(player.getKey()));
-                player.setPlayerUUID(uuid);
-                player.setName(username);
-                player.setLoggedIn(true);
+                player.registerPlayer(username, uuid);
                 System.out.println("Player " + username + " has successfully registered and logged in");
                 return uuid;
             }
@@ -152,15 +188,16 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
 
         try(Connection connection = databaseManager.getConnection()) {
             UUID playerUUID = databaseManager.verifyLogin(connection, username, password.decrypt(player.getKey()));
-            System.out.println("im here");
-            player.setPlayerUUID(playerUUID);
-            player.setName(username);
-            player.setLoggedIn(true);
+            player.registerPlayer(username, playerUUID);
             System.out.println("Player " + username + " has successfully logged in");
             return playerUUID;
         }
     }
 
+    /**
+     * Returns the server's public key
+     * @return the server's public key in string form
+     */
     @Override
     public String getServerPublicKey() throws RemoteException {
         return KeyUtils.publicKeyToBase64(publicKey);
@@ -176,7 +213,7 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
     }
 
     //sql update etc.
-    public synchronized static void cleanUp(UUID gameID, UUID winner, UUID loser) throws RemoteException, SQLException {
+    public synchronized static void cleanUp(UUID gameID, UUID winner, UUID loser) throws SQLException {
         try {
             registry.unbind(gameID.toString());
 
@@ -190,10 +227,17 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
             try(Connection connection = instance.getConnection()) {
                 instance.updateGame(connection, gameID, winner, loser);
             }
+
+
             System.out.println("Game " + gameID + " has been successfully unbound from the registry.");
         }
     }
 
+    /**
+     * <p>Adds a move with the given parameters to the MOVES table</p>
+     * for more details see DatabaseManager's addMove method
+     * @return the latest moveNumber
+     */
     public static int addMove(UUID gameID, UUID playerID, int moveNumber, LinkedList<MoveInfo> move, boolean promotion)
             throws SQLException{
         DatabaseManager instance = DatabaseManager.getInstance();
@@ -203,6 +247,10 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
         }
     }
 
+    /**
+     * Fetches a list of FinishedGames from the database and returns it
+     * @return a list containing FinishedGames or an empty list
+     */
     @Override
     public ArrayList<FinishedGame> getReplayableGames() throws RemoteException{
         try(Connection connection = databaseManager.getConnection()) {
@@ -212,6 +260,11 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
         }
     }
 
+    /**
+     * Fetches a list of moves from the database and returns it
+     * @param gameID the UUID of the game to fetch the moves of from the database
+     * @return a list containing the moves obtained from the database, null if an error occurs or the game does not have moves
+     */
     @Override
     public ArrayList<LinkedList<MoveInfo>> getReplayMoves(UUID gameID) throws RemoteException {
         try(Connection connection = databaseManager.getConnection()) {
@@ -219,5 +272,44 @@ public class HomePage extends UnicastRemoteObject implements IHomePage {
         } catch (SQLException e) {
            return null;
         }
+    }
+
+    public void heartbeatMonitor(){
+        new Thread(() -> {
+            System.out.println("im here");
+            while(true){
+                try{
+                    Thread.sleep(10000);
+
+                    userManager.getCallbacks().removeIf(key -> {
+                        try{
+                            key.sendHeartbeat();
+                            return false;
+                        }catch (RemoteException e){
+                            Player player = userManager.findByCallback(key);
+
+                            if(player.isLoggedIn()) {
+                                gameQueue.remove(key);
+
+                                if(player.getGameUUID() != null)
+                                    onGoingGames.get(player.getGameUUID()).forfeitGame(key);
+
+                                try (Connection connection = databaseManager.getConnection()) {
+                                    databaseManager.disconnectUser(connection, player.getPlayerUUID());
+                                } catch (SQLException ignored) {
+                                }
+
+                                String username = player.getUsername();
+                                System.out.println("Player:" + " " + username + " has disconnected");
+                            }else System.out.println("unregistered user has disconnected");
+
+                            return true;
+                        }
+                    });
+                }catch(InterruptedException exception){
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
     }
 }

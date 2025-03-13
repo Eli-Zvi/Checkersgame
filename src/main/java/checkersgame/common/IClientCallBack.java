@@ -22,5 +22,5 @@ public interface IClientCallBack extends Remote {
 
     void sendGameID(String gameID) throws RemoteException;
 
-    boolean isConnected() throws RemoteException;
+    boolean sendHeartbeat() throws RemoteException;
 }

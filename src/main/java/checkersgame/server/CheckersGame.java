@@ -96,23 +96,32 @@ public class CheckersGame extends UnicastRemoteObject implements ICheckersGame {
 
     @Override
     public void forfeit(IClientCallBack player) throws RemoteException {
+        forfeitGame(player);
+    }
+
+    public void forfeitGame(IClientCallBack player){
         gameState = player.equals(client2) ? Board.GameState.PLAYER1WIN : Board.GameState.PLAYER2WIN;
         notifyClients(gameState == Board.GameState.PLAYER1WIN);
     }
 
     @Override
     public String getPlayer1Name() throws RemoteException {
-        return player1.getName();
+        return player1.getUsername();
     }
 
     @Override
     public String getPlayer2Name() throws RemoteException {
-        return player2.getName();
+        return player2.getUsername();
     }
 
-    public synchronized void notifyClients(boolean player1Win) throws RemoteException {
-        client1.notifyGameOver(player1Win);
-        client2.notifyGameOver(!player1Win);
+    public synchronized void notifyClients(boolean player1Win){
+        try {
+            client1.notifyGameOver(player1Win);
+        }catch (RemoteException ignored){}
+
+        try {
+            client2.notifyGameOver(!player1Win);
+        }catch (RemoteException ignored){}
 
         try {
             if (player1Win) {
@@ -123,6 +132,9 @@ public class CheckersGame extends UnicastRemoteObject implements ICheckersGame {
         }catch (SQLException e){
             e.printStackTrace();
         }
+
+        player1.setGameUUID(null);
+        player2.setGameUUID(null);
     }
 
     public synchronized void notifyClients(LinkedList<MoveInfo> move, boolean promotion) throws RemoteException {

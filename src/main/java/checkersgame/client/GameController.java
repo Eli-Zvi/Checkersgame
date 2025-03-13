@@ -65,14 +65,18 @@ public class GameController{
         player.getCallback().setController(this);
         String game_name = player.getGameID();
 
-        while(gameStub == null) {
+        while(gameStub == null) { //TODO IMPLEMENT RETRY
             try {
-                setGameStub((ICheckersGame) registry.lookup(game_name));
+                gameStub = (ICheckersGame) registry.lookup(game_name);
             }catch (RemoteException e) {
                 wait(1000);
             }
         }
+        try {
+            System.out.println(Arrays.toString(registry.list())); //TODO MAKE THIS ILLEGAL
+        }catch (RemoteException e){
 
+        }
         System.out.println("Connected to game successfully");
         tileBoard = new StackPane[NUM_OF_ROWS][NUM_OF_COLUMNS];
         Piece [][] board;
@@ -172,7 +176,7 @@ public class GameController{
         }
     }
 
-    private synchronized void handleTileClick(LinkedList<MoveInfo> move){ //send MoveInfo instead
+    private void handleTileClick(LinkedList<MoveInfo> move){ //send MoveInfo instead
         try {
             removeHighlights();
             //int[] pos = possibleMoves.get(move);
@@ -270,30 +274,19 @@ public class GameController{
         }
     }
 
-    public void gameOver(boolean win){
-        gameStub = null;
-        if(win){
-            gameOverLabel.setText("YOU WIN!");
-            gameOverLabel.setStyle("-fx-text-fill: green;");
-        }else{
-            gameOverLabel.setText("YOU LOSE!");
-            gameOverLabel.setStyle("-fx-text-fill: red;");
-        }
-        gameOverLabel.setVisible(true);
-        joinGameButton.setCursor(Cursor.HAND);
-        homeScreenButton.setCursor(Cursor.HAND);
-        playerTurnLabel.setVisible(false);
-        UIBoard.setVisible(false);
-        joinGameButton.setVisible(true);
-        homeScreenButton.setVisible(true);
-        forfeitButton.setVisible(false);
-        callback.setController(null);
-    }
-
+    /**
+     * Removes a piece from the board
+     * @param row the piece's row
+     * @param col the piece's column
+     */
     private void removePiece(int row, int col){
         tileBoard[row][col].getChildren().remove(PIECE_INDEX);
     }
 
+    /**
+     * Sets the value of the currentTurn and sets the turn label accordingly
+     * @param turn the next player turn in the game
+     */
     public void setCurrentTurn(Utils.Turn turn){
         currentTurn = turn;
         Platform.runLater(() -> {
@@ -305,20 +298,61 @@ public class GameController{
         });
     }
 
+    /**
+     * Sets the value of possibleMoves property, used for turn update
+     * @param possibleMoves new possible Moves either null or a map
+     */
     public void setPossibleMoves(Map<LinkedList<MoveInfo>, int[]> possibleMoves){
         this.possibleMoves = possibleMoves;
     }
 
-    private void setGameStub(ICheckersGame game){
-        this.gameStub = game;
+    /**
+     * <p>Game over procedure</p>
+     * <ol>
+     *     <li>Sets the game stub to null</li>
+     *     <li>Sets the callback's controller to null</li>
+     *     <li>Displays You Win/Lose based on @param win</li>
+     *     <li>Sets gameOverLabel, homeScreenButton, and joinGameButton to be visible</li>
+     *     <li>Sets the UIBoard, playerTurnLabel, forfeitButton to not be visible</li>
+     * </ol>
+     * @param win boolean indicating if the player has won or not
+     */
+    public void gameOver(boolean win){
+        gameStub = null;
+        callback.setController(null);
+
+        if(win){
+            gameOverLabel.setText("YOU WIN!");
+            gameOverLabel.setStyle("-fx-text-fill: green;");
+        }else{
+            gameOverLabel.setText("YOU LOSE!");
+            gameOverLabel.setStyle("-fx-text-fill: red;");
+        }
+
+        joinGameButton.setCursor(Cursor.HAND);
+        homeScreenButton.setCursor(Cursor.HAND);
+
+        gameOverLabel.setVisible(true);
+        homeScreenButton.setVisible(true);
+        joinGameButton.setVisible(true);
+
+        UIBoard.setVisible(false);
+        playerTurnLabel.setVisible(false);
+        forfeitButton.setVisible(false);
     }
 
+    /**
+     * Home button on action function, switches to home screen
+     */
     @FXML
     void homeScreenOnAction(ActionEvent event) throws IOException {
         assert SceneManager.getInstance() != null;
         SceneManager.getInstance().switchScene("HomePage.fxml");
     }
 
+    /**
+     * Join button on action function, disables all buttons and displays In Queue message, requests server to join game
+     */
     @FXML
     void joinButtonOnAction(ActionEvent event) throws RemoteException {
         try{
@@ -332,6 +366,9 @@ public class GameController{
         }
     }
 
+    /**
+     * Forfeit on action function, sends a request to server to forfeit the game
+     */
     @FXML
     void forfeitOnAction(ActionEvent event) throws NotBoundException, RemoteException {
         gameStub.forfeit(callback);

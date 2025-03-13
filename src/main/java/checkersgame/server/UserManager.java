@@ -1,10 +1,11 @@
 package checkersgame.server;
 
 import checkersgame.common.IClientCallBack;
-
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+//TODO DOCUMENT
 public class UserManager {
     private final Map<IClientCallBack, Player> clients;
 
@@ -28,4 +29,7 @@ public class UserManager {
         clients.remove(callBack);
     }
 
+    public Set<IClientCallBack> getCallbacks(){
+        return clients.keySet();
+    }
 }

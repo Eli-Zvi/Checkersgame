@@ -5,9 +5,9 @@ import javafx.stage.Stage;
 import java.util.Locale;
 
 /**
- * <b>This main class of the Client of CheckersGame</b>
+ * <b>This is the main class of the CheckersGame Client</b>
  *
- * <p>The Client class is responsible for initializing the client side of the CheckersGame</p>
+ * <p>The class is responsible for initializing the client side of the CheckersGame</p>
  *
  * @author Ilay Zvi
  */
