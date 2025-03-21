@@ -1,0 +1,15 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender"> <!-- output to console -->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.checkers" level="DEBUG"/>
+    <logger name="java.rmi" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/> <!-- stop hikari spam -->
+
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

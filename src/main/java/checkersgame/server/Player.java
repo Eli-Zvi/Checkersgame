@@ -1,6 +1,6 @@
 package checkersgame.server;
 
-import checkersgame.common.IClientCallBack;
+import checkersgame.common.ClientCallBack;
 
 import javax.crypto.SecretKey;
 import java.util.UUID;
@@ -12,7 +12,7 @@ public class Player {
 
     private String username;
     private UUID playerUUID, gameUUID;
-    private final IClientCallBack callBack;
+    private final ClientCallBack callBack;
     private boolean isLoggedIn = false;
     private final SecretKey key;
 
@@ -21,7 +21,7 @@ public class Player {
      * @param callBack the callback that belongs to the player
      * @param key the key that belongs to the player
      */
-    public Player(IClientCallBack callBack, SecretKey key) {
+    public Player(ClientCallBack callBack, SecretKey key) {
         this.username = null;
         this.playerUUID = null;
         this.callBack = callBack;
@@ -45,7 +45,7 @@ public class Player {
     /**
      * Gets the value of the property callBack.
      */
-    public IClientCallBack getCallBack() {
+    public ClientCallBack getCallBack() {
         return callBack;
     }
 

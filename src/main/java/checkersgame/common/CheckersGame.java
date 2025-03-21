@@ -13,7 +13,7 @@ import java.util.LinkedList;
  *
  * @author Ilay Zvi
  */
-public interface ICheckersGame extends Remote {
+public interface CheckersGame extends Remote {
     //use lock
     void attemptMove(LinkedList<MoveInfo> move) throws RemoteException, InterruptedException;
     //use lock
@@ -21,11 +21,11 @@ public interface ICheckersGame extends Remote {
     //use lock
     Piece[][] getBoard() throws RemoteException;
 
-    void playerReady(IClientCallBack player) throws RemoteException;
+    void playerReady(ClientCallBack player) throws RemoteException;
 
-    Utils.PieceColor getPlayerColor(IClientCallBack player) throws RemoteException;
+    Utils.PieceColor getPlayerColor(ClientCallBack player) throws RemoteException;
 
-    void forfeit(IClientCallBack player) throws RemoteException, NotBoundException;
+    void forfeit(ClientCallBack player) throws RemoteException, NotBoundException;
 
     String getPlayer1Name() throws RemoteException;
 

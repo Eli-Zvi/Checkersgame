@@ -28,7 +28,7 @@ public class SceneManager {
     /**
      * This method initializes singleton instance of the class SceneManager
      */
-    public static void initializeInstance(Stage stage){
+    public synchronized static void initializeInstance(Stage stage){
         if(instance == null){
             instance = new SceneManager(stage);
         }

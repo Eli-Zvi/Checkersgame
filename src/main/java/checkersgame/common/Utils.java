@@ -12,6 +12,7 @@ public class Utils {
     //represents the index in the StackPane of the tile and piece
     public final static int TILE_INDEX = 0;
     public final static int PIECE_INDEX = 1;
+    public final static int RETRY_ATTEMPTS = 5;
 
     /**
      * Represents a turn in the game and the color that correlates to the respective turn

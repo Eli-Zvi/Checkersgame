@@ -1,6 +1,8 @@
 package checkersgame.client;
 
 import checkersgame.common.*;
+import static checkersgame.common.Utils.*;
+
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -20,17 +22,16 @@ import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.sql.SQLException;
 import java.util.*;
-
-import static checkersgame.common.Utils.*;
-
 //TODO ADD DOCUMENTATION AND CHECK FOR LOCKS
-
+/**
+ * 
+ */
 public class GameController{
     private Turn currentTurn = null;
-    private ICheckersGame gameStub;
+    private CheckersGame gameStub;
     private CallBackImpl callback;
     private StackPane currentPiece;
-    private StackPane [][] tileBoard;
+    private StackPane [][] tileBoard; //stores the board's panes
     private double tile_width, tile_height;
     private final HashMap<StackPane, Rectangle> highlights = new HashMap<>();
     private Map<LinkedList<MoveInfo>, int[]> possibleMoves;
@@ -45,50 +46,49 @@ public class GameController{
     @FXML
     private Button joinGameButton, homeScreenButton, forfeitButton;
 
+    /**
+     * Initializes GameController
+     */
     @FXML
-    private void initialize() throws NotBoundException, RemoteException, InterruptedException {
+    private void initialize() throws RemoteException, InterruptedException {
+        createGameStub();
         initializeBoard();
+        initializeUI();
+    }
+
+    /**
+     * Initializes the game UI including player names, board, sets unnecessary labels to be invisible
+     */
+    private void initializeUI() throws RemoteException {
         gameStub.playerReady(callback);
-        gameOverLabel.setVisible(false);
+
         UIBoard.setVisible(true);
+
+        gameOverLabel.setVisible(false);
         joinGameButton.setVisible(false);
         homeScreenButton.setVisible(false);
         statusLabel.setVisible(false);
+
         player1Label.setText("BLACK: " + gameStub.getPlayer1Name());
         player2Label.setText("RED: " + gameStub.getPlayer2Name());
     }
 
-    private void initializeBoard() throws NotBoundException, InterruptedException {
-        Client player = Client.getInstance();
-        Registry registry = player.getRegistry();
-        callback = player.getCallback();
-        player.getCallback().setController(this);
-        String game_name = player.getGameID();
-
-        while(gameStub == null) { //TODO IMPLEMENT RETRY
-            try {
-                gameStub = (ICheckersGame) registry.lookup(game_name);
-            }catch (RemoteException e) {
-                wait(1000);
-            }
-        }
-        try {
-            System.out.println(Arrays.toString(registry.list())); //TODO MAKE THIS ILLEGAL
-        }catch (RemoteException e){
-
-        }
-        System.out.println("Connected to game successfully");
+    /**
+     * Initializes the StackPane which represents the board and initializes the board's UI and its tiles, pieces
+     */
+    private void initializeBoard(){
         tileBoard = new StackPane[NUM_OF_ROWS][NUM_OF_COLUMNS];
         Piece [][] board;
 
         try {
             board = gameStub.getBoard();
-            pieceColor = gameStub.getPlayerColor(callback);
+            pieceColor = gameStub.getPlayerColor(callback); //get player's color
         } catch (RemoteException e) {
             throw new RuntimeException(e);
         }
 
         Platform.runLater(()-> {
+            //calculate the radius of each piece on the board based on the tile width and height
             this.tile_width = UIBoard.getWidth() / NUM_OF_COLUMNS;
             this.tile_height = UIBoard.getHeight() / NUM_OF_ROWS;
             double piece_radius = Math.min(tile_width, tile_height);
@@ -100,41 +100,81 @@ public class GameController{
 
                     PieceUI newUI = null;
 
-                    if((row + col) % 2 == 1){
-                        tile.setFill(Color.web("#704731"));
-                        if(row < 3){
+                    if((row + col) % 2 == 1){ //only add pieces to the black tiles
+                        tile.setFill(Color.web("#704731")); //set the fill of the black tiles
+                        if(row < 3){ //if it's the top half of the board -> it's a black piece
                             newUI = new PieceUI(board[row][col], piece_radius, piece_radius);
-                        }else if(row > 4){
+                        }else if(row > 4){ // if it's at the bottom of the board -> it's a white piece
                             newUI = new PieceUI(board[row][col], piece_radius, piece_radius);
                         }
-                        tempPane.getChildren().add(TILE_INDEX, tile);
+                        tempPane.getChildren().add(TILE_INDEX, tile); //add the tile to the pane
 
                         if(newUI != null) {
-                            newUI.setOnMouseClicked(this::handlePieceClick);
-                            newUI.setCursor(Cursor.HAND);
-                            tempPane.getChildren().add(PIECE_INDEX, newUI);
-                            StackPane.setAlignment(newUI, Pos.CENTER);
+                            newUI.setOnMouseClicked(this::handlePieceClick); //set mouse on click to call handlePieceClick
+                            newUI.setCursor(Cursor.HAND); //change the cursor when hovering over a piece
+                            tempPane.getChildren().add(PIECE_INDEX, newUI); //add the piece to its StackPane
+                            StackPane.setAlignment(newUI, Pos.CENTER); // set the alignment of the piece in the StackPane(same as default)
                         }
-                        tempPane.setUserData(new int[]{row, col});
+
+                        tempPane.setUserData(new int[]{row, col}); //embed the position of the pane inside the pane
+
+                        //add the pane containing the tile and the piece to its respective place in the UI StackPane board array
                         tileBoard[row][col] = tempPane;
-                        UIBoard.add(tempPane, col, row);
+                        UIBoard.add(tempPane, col, row); //add the pane to its respective position on the board
                     }else{
-                        tile.setFill(Color.web("#efc59d"));
-                        UIBoard.add(tile, col, row);
-                        tileBoard[row][col] = null;
+                        tile.setFill(Color.web("#efc59d")); //white tile
+                        UIBoard.add(tile, col, row); //add the tile to its respective position on the board
+                        tileBoard[row][col] = null; //set the position on the board to be null since no piece will be there
                     }
                 }
             }
         });
     }
 
+    /**
+     * Attempts to look up and connect to gameStub
+     * @throws InterruptedException if failed to connect RETRY_ATTEMPTS times
+     */
+    private void createGameStub() throws InterruptedException {
+        Client player = Client.getInstance();
+        Registry registry = player.getRegistry();
+        callback = player.getCallback();
+        player.getCallback().setController(this);
+        String game_name = player.getGameID();
+
+        int retries = 0;
+
+        while(gameStub == null) {
+            try {
+                gameStub = (CheckersGame) registry.lookup(game_name);
+            }catch (RemoteException | NotBoundException e) {
+                if (retries == RETRY_ATTEMPTS)
+                    throw new RuntimeException();
+                Thread.sleep(10000);
+                retries++;
+            }
+        }
+
+        System.out.println("Connected to game successfully");
+    }
+
+    /**
+     * Returns the coordinates of the given tile
+     * @param pane a tile on the board
+     * @return it's coordinates
+     */
     private int[] getTilePosition(StackPane pane) throws IndexOutOfBoundsException{
         return (int[]) pane.getUserData();
     }
 
+    /**
+     * Highlights a given tile and relates a move to it using the highlight
+     * @param pane tile to highlight
+     * @param move move to relate to the tile
+     */
     private void addHighlight(StackPane pane, LinkedList<MoveInfo> move){
         Rectangle highlight = new Rectangle(tile_width, tile_height);
-        highlight.setOnMouseClicked(e -> handleTileClick(move));
+        highlight.setOnMouseClicked(e -> handleTileClick(move)); //sets on click function relating it to the highlight
         highlight.setFill(Color.YELLOW);
         highlight.setOpacity(0.5);
         highlight.setCursor(Cursor.HAND);
@@ -142,6 +182,10 @@ public class GameController{
         highlights.put(pane, highlight);
     }
 
+    /**
+     * Highlights a tile
+     * @param pane a tile to highlight
+     */
     private void addPathHighlight(StackPane pane){
         Rectangle highlight = new Rectangle(tile_width, tile_height);
         highlight.setFill(Color.BLUE);
@@ -150,6 +194,10 @@ public class GameController{
         highlights.put(pane, highlight);
     }
 
+    /**
+     * Highlights a piece tile
+     * @param piecePane the piece to highlight
+     */
     private void addPieceHighlight(StackPane piecePane){
         Rectangle highlight = new Rectangle(tile_width, tile_height);
         highlight.setFill(Color.GREEN);
@@ -158,6 +206,9 @@ public class GameController{
         highlights.put(piecePane, highlight);
     }
 
+    /**
+     * Removes all the highlights from the board
+     */
     private void removeHighlights(){
         for(StackPane stack : highlights.keySet()){
             stack.getChildren().remove(highlights.get(stack));
@@ -166,6 +217,9 @@ public class GameController{
         highlights.clear();
     }
 
+    /**
+     * Piece on click function, if it's currently the player's turn and the piece belongs to the player - displays the possible moves
+     */
     private void handlePieceClick(MouseEvent e){
         PieceUI temp = (PieceUI) e.getSource();
 
@@ -176,18 +230,21 @@ public class GameController{
         }
     }
 
+    /**
+     * On tile click, send the server a request to execute the move that is related to that tile
+     * @param move the move to be made
+     */
     private void handleTileClick(LinkedList<MoveInfo> move){ //send MoveInfo instead
         try {
             removeHighlights();
-            //int[] pos = possibleMoves.get(move);
 
             if(move.size() == 1 && Math.abs(move.getFirst().currentCol() - move.getFirst().newCol()) == 1) {
                 gameStub.attemptMove(move);
             }else{
                 gameStub.attemptCapture(move);
             }
-            currentTurn = null;
-            possibleMoves = null;
+            currentTurn = null; //set the current turn to null and await server update
+            possibleMoves = null; //set the possibleMoves to null and await server update
         }catch (RemoteException e) {
             System.out.println("RemoteException");
         } catch (InterruptedException | NotBoundException e) {
@@ -195,16 +252,24 @@ public class GameController{
         }
     }
 
-    public void updateBoard(LinkedList<MoveInfo> move, boolean promotion){
+    /**
+     * Updates the board when notified by the server
+     * @param move the move that was executed
+     * @param promotion if the piece that is moving has been promoted
+     */
+    public synchronized void updateBoard(LinkedList<MoveInfo> move, boolean promotion){
         removeHighlights();
+
         if(move.size() == 1 && Math.abs(move.getFirst().currentCol() - move.getFirst().newCol()) == 1){
+            //if it's a non-capturing move
             MoveInfo temp = move.getFirst();
-            swap(temp);
+            move(temp);
             if (promotion)
                 ((PieceUI)(tileBoard[temp.newRow()][temp.newCol()].getChildren().get(PIECE_INDEX))).promote();
         }else{
+            //if it's a capture move
             for(MoveInfo m : move){
-                swap(m);
+                move(m);
                 removePiece((m.currentRow() + m.newRow()) / 2, (m.currentCol() + m.newCol()) / 2);
             }
             MoveInfo temp = move.getLast();
@@ -213,24 +278,11 @@ public class GameController{
         }
     }
 
-    private void printBoard(){
-        for (StackPane []pane : tileBoard){
-            for(StackPane p : pane){
-                if(p != null && p.getChildren().size() == 2){
-                    PieceUI piece = (PieceUI) p.getChildren().get(PIECE_INDEX);
-                    System.out.print(piece.getPiece().getColor() + " ");
-                }else if(p == null){
-                    System.out.print("x ");
-                }else{
-                    System.out.print("tile ");
-                }
-            }
-            System.out.println();
-        }
-        System.out.println("--------------------------------");
-    }
-
-    private void attemptMove(PieceUI temp){
+    /**
+     * Displays the possible moves of a piece that has been clicked
+     * @param piece the piece that was clicked
+     */
+    private void attemptMove(PieceUI piece){
         int[] position;
 
         try {
@@ -242,19 +294,26 @@ public class GameController{
 
         int row = position[0], col = position[1];
 
-        addPieceHighlight((StackPane)temp.getParent());
+        addPieceHighlight((StackPane)piece.getParent()); // add highlight on the piece that was clicked
+
+        //loop onto all the possible moves that are related to the piece that was clicked
         for (Map.Entry<LinkedList<MoveInfo>, int[]> entry : possibleMoves.entrySet()){
             int[] tempPosition = entry.getValue();
+
             if(tempPosition[0] == row && tempPosition[1] == col){
                 LinkedList<MoveInfo> moveInfo = entry.getKey();
 
+                //start from the end to the beginning of the list of moves
                 for (int i = moveInfo.size() - 1; i >= 0; i--) {
                     MoveInfo move = moveInfo.get(i);
                     int newRow = move.newRow(), newCol = move.newCol();
 
+
                     if (i == moveInfo.size() - 1 && !highlights.containsKey(tileBoard[newRow][newCol])) {
+                        //add the final move in the list if it hasn't been highlighted yet
                         addHighlight(tileBoard[newRow][newCol], moveInfo);
                     } else {
+                        //add the path highlights, skip tiles that have already been highlighted
                         if (!highlights.containsKey(tileBoard[newRow][newCol])) {
                             addPathHighlight(tileBoard[newRow][newCol]);
                         }
@@ -265,7 +324,11 @@ public class GameController{
 
     }
 
-    private void swap(MoveInfo move){
+    /**
+     * Moves the piece from move's currentRow,currentCol to newRow, newCol
+     * @param move a MoveInfo record
+     */
+    private void move(MoveInfo move){
         try {
             PieceUI temp = (PieceUI) tileBoard[move.currentRow()][move.currentCol()].getChildren().remove(PIECE_INDEX);
             tileBoard[move.newRow()][move.newCol()].getChildren().add(temp);
@@ -372,5 +435,22 @@ public class GameController{
     @FXML
     void forfeitOnAction(ActionEvent event) throws NotBoundException, RemoteException {
         gameStub.forfeit(callback);
+    }
+
+    private void printBoard(){
+        for (StackPane []pane : tileBoard){
+            for(StackPane p : pane){
+                if(p != null && p.getChildren().size() == 2){
+                    PieceUI piece = (PieceUI) p.getChildren().get(PIECE_INDEX);
+                    System.out.print(piece.getPiece().getColor() + " ");
+                }else if(p == null){
+                    System.out.print("x ");
+                }else{
+                    System.out.print("tile ");
+                }
+            }
+            System.out.println();
+        }
+        System.out.println("--------------------------------");
     }
 }

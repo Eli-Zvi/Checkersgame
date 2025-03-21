@@ -14,10 +14,12 @@ import java.util.Locale;
 public class ClientMain extends Application {
     @Override
     public void start(Stage stage){
-        stage.setOnCloseRequest(event -> System.exit(0)); //add call to server that the connection is being closed and then have it call a forfeit if needed
+        stage.setOnCloseRequest(event -> System.exit(0)); //disconnect on window close
         Locale.setDefault(Locale.ENGLISH);
+
         SceneManager.initializeInstance(stage); //initialize scene manager
         Client.initializeInstance(); //initialize client
+
         SceneManager sceneManager = SceneManager.getInstance();
         try{
             assert sceneManager != null;

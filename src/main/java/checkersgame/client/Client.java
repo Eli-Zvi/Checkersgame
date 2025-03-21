@@ -1,7 +1,8 @@
 package checkersgame.client;
 
-import checkersgame.common.IHomePage;
+import checkersgame.common.HomePage;
 import checkersgame.common.KeyUtils;
+import static checkersgame.common.Utils.RETRY_ATTEMPTS;
 
 import javax.crypto.SecretKey;
 import java.rmi.NotBoundException;
@@ -9,9 +10,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
 import java.util.UUID;
-//TODO IMPROVE SINGLETONS INSTEAD OF USING INITIALIZE AND GET JUST USE GET THAT USES INITIALIZE, ADD SYNCHRO
+
 /**
  * <b>This Singleton class represents the client's information</b><br>
  * It establishes initial connection with the server and stores client information
@@ -23,7 +23,7 @@ import java.util.UUID;
  * @author Ilay Zvi
  */
 public class Client{
-    private IHomePage homeStub;
+    private HomePage homeStub;
     private final CallBackImpl callback;
     private Registry registry;
     private static Client client;
@@ -40,18 +40,34 @@ public class Client{
      * @throws RemoteException - if there is an issue connecting to the RMI registry.
      * @throws GeneralSecurityException - if failure occurs during key creation
      */
-    private Client() throws RemoteException, GeneralSecurityException { //TODO IMPLEMENT RETRY CREATE FUNCTIONS FOR EACH STUB CONNECTION
+    private Client() throws RemoteException, GeneralSecurityException, InterruptedException {
+        int retries = 0;
+
         while(registry == null) { //establish connection with server
             try {
                 registry = LocateRegistry.getRegistry("localhost", 1099);
+
             }catch (RemoteException ignored){
+                if (retries == RETRY_ATTEMPTS)
+                    throw new RuntimeException();
+
+                Thread.sleep(5000);
+                retries++;
             }
         }
 
+        retries = 0;
+
         while(homeStub == null) { //establish connection with landing page
             try{
-                homeStub = (IHomePage) registry.lookup("home");
-            }catch (RemoteException | NotBoundException ignored){}
+                homeStub = (HomePage) registry.lookup("home");
+            }catch (RemoteException | NotBoundException ignored){
+                if (retries == RETRY_ATTEMPTS)
+                    throw new RuntimeException();
+
+                Thread.sleep(5000);
+                retries++;
+            }
         }
 
         this.key = KeyUtils.generateAESKey(); //create aes key
@@ -64,11 +80,11 @@ public class Client{
     /**
      * This method initializes singleton instance of the class Client
      */
-    public static void initializeInstance(){
+    public synchronized static void initializeInstance(){
         if(client == null){
             try {
                 client = new Client();
-            }catch (RemoteException | GeneralSecurityException ignored){}
+            }catch (RemoteException | GeneralSecurityException | InterruptedException ignored){}
         }
     }
 
@@ -89,7 +105,7 @@ public class Client{
     /**
      * Gets the value of the property homeStub.
      */
-    public IHomePage getHomeStub() {
+    public HomePage getHomeStub() {
         return homeStub;
     }
 

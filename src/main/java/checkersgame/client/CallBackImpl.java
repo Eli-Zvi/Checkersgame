@@ -1,7 +1,7 @@
 package checkersgame.client;
 
 import checkersgame.common.Utils;
-import checkersgame.common.IClientCallBack;
+import checkersgame.common.ClientCallBack;
 import checkersgame.common.MoveInfo;
 import javafx.application.Platform;
 
@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * <p>This class represents a callback to the client</p>
  *
- * <p>This class implements the IClientCallBack interface</p>
+ * <p>This class implements the ClientCallBack interface</p>
  * <ul>
  *     <li>The callback is used by the server to contact the client</li>
  *     <li>The callback is used by the client to identify itself when contacting the server</li>
@@ -22,7 +22,7 @@ import java.util.Map;
  *
  * @author Ilay Zvi
  */
-public class CallBackImpl extends UnicastRemoteObject implements IClientCallBack {
+public class CallBackImpl extends UnicastRemoteObject implements ClientCallBack {
     private GameController controller;
 
     protected CallBackImpl() throws RemoteException {

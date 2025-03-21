@@ -1,14 +1,14 @@
 package checkersgame.server;
 
-import checkersgame.common.IHomePage;
+import checkersgame.common.HomePage;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 /**
- * <b>This is the main class of the CheckersGame Server</b>
+ * <b>This is the main class of the CheckersGameImpl Server</b>
  *
- * <p>The class is responsible for initializing the server side of the CheckersGame</p>
+ * <p>The class is responsible for initializing the server side of the CheckersGameImpl</p>
  *
  * @author Ilay Zvi
  */
@@ -20,7 +20,7 @@ public class ServerMain {
             //initialize registry
             Registry registry = LocateRegistry.createRegistry(1099);
             //initialize homepage
-            IHomePage homePage = new HomePage(registry);
+            HomePage homePage = new HomePageImpl(registry);
 
             //bind homepage to registry
             registry.rebind("home", homePage);

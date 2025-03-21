@@ -6,6 +6,7 @@ module checkersgame {
     requires java.sql;
     requires jdk.jshell;
     requires com.zaxxer.hikari;
+    requires org.slf4j;
 
 
     exports checkersgame.common;

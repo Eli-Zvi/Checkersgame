@@ -4,6 +4,8 @@ import checkersgame.common.FinishedGame;
 import checkersgame.common.MoveInfo;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -18,6 +20,8 @@ import java.util.UUID;
  * <p>The class allows requesters to update and add rows to the tables in the database after obtaining a connection</p>
  */
 public class DatabaseManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
 
     private static HikariDataSource ds;
     private static DatabaseManager instance;
@@ -67,9 +71,9 @@ public class DatabaseManager {
             }
 
             connection.commit();
-            System.out.println("DB connection established successfully");
+            logger.info("DB connection established successfully");
         }catch (SQLException e){
-            System.out.println("connection failed to initialize");
+            logger.error("connection failed to initialize");
             if (connection != null)
                 connection.rollback();
 
@@ -166,6 +170,7 @@ public class DatabaseManager {
             statement.setBytes(3, hashedPass);
             statement.setString(4, salt);
             statement.executeUpdate();
+            logger.info("New player registered with name: {} and uuid: {}", username, uuid);
         }
     }
 
@@ -211,6 +216,11 @@ public class DatabaseManager {
         }
     }
 
+    /**
+     * Updates the given player's LOGGED_IN to FALSE
+     * @param connection an established connection with the database
+     * @param player the UUID of the player to disconnect
+     */
     public void disconnectUser(Connection connection, UUID player) throws SQLException{
         connection.setAutoCommit(false);
         String selectPlayer = "UPDATE PLAYERS SET LOGGED_IN = FALSE WHERE UUID = ?";
@@ -268,12 +278,27 @@ public class DatabaseManager {
             lossStatement.executeUpdate();
 
             connection.commit();
+            logger.info("New game started with id {}", gameUUID);
         }catch (SQLException e){
             connection.rollback();
             throw e;
         }finally {
             connection.setAutoCommit(true);
+        }
+    }
 
+    /**
+     * Deletes a game in the GAMES table if it exists
+     * @param connection an established connection with the database
+     * @param gameUUID the UUID of the game to be removed
+     */
+    public void deleteGame(Connection connection, UUID gameUUID) throws SQLException{
+        String deleteQuery = "DELETE FROM GAMES WHERE ID = ?";
+
+        try(PreparedStatement statement = connection.prepareStatement(deleteQuery)){
+            statement.setString(1, gameUUID.toString());
+
+            statement.executeUpdate();
         }
     }
 
@@ -315,6 +340,7 @@ public class DatabaseManager {
             lossStatement.setString(1, loser.toString());
             lossStatement.executeUpdate();
             connection.commit();
+            logger.info("Game {} has been finalized", gameID);
         }catch (SQLException e){
             connection.rollback();
             throw e;
