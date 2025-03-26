@@ -17,7 +17,7 @@ import java.util.Base64;
  */
 public class Password implements Serializable{
 
-    private static final String ENCRYPTION_ALGO = "AES/GCM/NoPadding"; //provides authentication and integrity
+    private static final String ENCRYPTION_ALGO = "AES/GCM/NoPadding"; //provides authentication and integrity using GMAC
     private static final int GCM_TAG_LENGTH = 128; //common tag length
     private static final int IV_LENGTH = 12;
     private final String encryptedPassword;

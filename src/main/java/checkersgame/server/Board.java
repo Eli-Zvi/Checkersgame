@@ -252,7 +252,7 @@ public class Board {
     /**
      * Checks for all possible moves for the current state of the board and current player turn
      */
-    public void checkPossibleMoves() {
+    private void checkPossibleMoves() {
         possibleMoves.clear();
         for (int row = 0; row < NUM_OF_ROWS; row++) {
             for (int col = 0; col < NUM_OF_COLUMNS; col++) {
@@ -284,7 +284,7 @@ public class Board {
      *     to scan if any of the possible singular captures could perform another capture or captures</li>
      * </ol>
      */
-    public void checkPossibleCaptures(){
+    private void checkPossibleCaptures(){
         possibleMoves.clear(); //clear possibleMoves
 
         for (int row = 0; row < NUM_OF_ROWS; row++) {
@@ -361,6 +361,20 @@ public class Board {
 
         if(!toAdd.isEmpty()) {
             possibleMoves.putAll(toAdd);
+        }
+    }
+
+    /**
+     * If the game is still in play, checks if there are any possible(forced) captures,
+     * if there aren't any, checks all possible moves
+     */
+    public void updatePossibleMoves(){
+        if(checkWin() == GameState.ONGOING){
+            checkPossibleCaptures(); //check for the possible captures
+
+            if (possibleMoves.isEmpty()) { //if no possible captures were found, check for possible regular moves
+                checkPossibleMoves();
+            }
         }
     }
 

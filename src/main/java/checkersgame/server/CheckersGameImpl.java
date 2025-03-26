@@ -195,11 +195,7 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
     private synchronized void notifyClients(LinkedList<MoveInfo> move, boolean promotion) throws RemoteException {
         if(player1Ready && player2Ready) {
 
-            board.checkPossibleCaptures(); //check for the possible captures
-
-            if (board.getPossibleMoves().isEmpty()) { //if no possible captures were found, check for possible regular moves
-                board.checkPossibleMoves();
-            }
+            board.updatePossibleMoves();
 
             if (move != null) { //if the move parameter is not null notify the clients about the move that was performed
                 client1.sendBoardUpdate(move, promotion);

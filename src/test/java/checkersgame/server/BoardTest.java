@@ -19,9 +19,7 @@ class BoardTest {
     void setUp() {
         // Initialize the Board instance before each test
         board = new Board();
-        board.checkPossibleCaptures();
-        if(board.getPossibleMoves().isEmpty())
-            board.checkPossibleMoves();
+        board.updatePossibleMoves();
     }
 
     @Test
