@@ -67,7 +67,7 @@ public class RegisterController {
             String password = passLoginField.getText();
             clearLoginFields();
 
-            if (username.length() > 7 && password.length() > 7 && password.length() < 17 && username.length() < 17){
+            if (username.length() > 3 && password.length() > 7 && password.length() < 17 && username.length() < 17){
                 Client client = Client.getInstance();
                 CallBackImpl callBack = client.getCallback();
 
@@ -99,6 +99,8 @@ public class RegisterController {
                         alert(Alert.AlertType.ERROR,"Authentication Error", "An unknown error has occurred").show();
                     }
                 }
+            }else{
+                alert(Alert.AlertType.ERROR,"Login Error", "Invalid Username or Password").show();
             }
         }else{
             alert(Alert.AlertType.ERROR, "Login Error", "One or more fields are empty").show();

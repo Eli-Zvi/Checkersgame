@@ -318,7 +318,7 @@ public class Board {
      * ex: possibleMoves has the move 2,2 -> 4,4 checks if captures can be done from 4,4 to a double diagonal tile
      */
     private void checkMultipleCaptures(){
-        //use recursion - moveinfo, board as parameters, create a new board for every direction
+        // key - the list of moves that lead to the board state, value - a board state
         Queue<Pair<LinkedList<MoveInfo>, Board>> infoBoard = new LinkedList<>();
         Map<LinkedList<MoveInfo>, int[]> toAdd = new HashMap<>();
 
@@ -328,7 +328,7 @@ public class Board {
             boardCopy.capture(initialMove.getLast());
             infoBoard.add(new Pair<>(initialMove, boardCopy));
 
-            while (!infoBoard.isEmpty()) {
+            while (!infoBoard.isEmpty()) { //similar to BFS
                 Pair<LinkedList<MoveInfo>, Board> info = infoBoard.poll();
                 LinkedList<MoveInfo> moves = info.getKey();
                 boardCopy = info.getValue();
@@ -339,7 +339,7 @@ public class Board {
                     int currRow = currentPos.newRow(), currCol = currentPos.newCol();
                     MoveInfo move = new MoveInfo(currRow, currCol, currRow + 2 * d.getRowChange(), currCol + 2 * d.getColChange());
 
-                    if (boardCopy.isCaptureLegal(move)) { // <- need to create a new board after because it changes the board
+                    if (boardCopy.isCaptureLegal(move)) {
                         madeNewCapture = true;
                         LinkedList<MoveInfo> tempMoves = new LinkedList<>(moves);
                         Board tempBoard = new Board(boardCopy.getBoard());

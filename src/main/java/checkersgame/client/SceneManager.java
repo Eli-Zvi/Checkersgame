@@ -51,7 +51,7 @@ public class SceneManager {
     public void initializeScene(String fxmlFile) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(fxmlFile));
         Scene _scene = new Scene(fxmlLoader.load());
-        stage.setTitle("CheckersGame");
+        stage.setTitle("Checkers Game");
         stage.setScene(_scene);
         stage.setResizable(false);
         stage.show();

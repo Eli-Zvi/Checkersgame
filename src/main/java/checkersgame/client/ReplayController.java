@@ -71,7 +71,7 @@ public class ReplayController {
     private void initialize() throws RemoteException {
         ArrayList<FinishedGame> gameStrings = Client.getInstance().getHomeStub().getReplayableGames();
 
-        if(gameStrings != null) {
+        if(gameStrings != null && !gameStrings.isEmpty()) {
             ObservableList<FinishedGame> list = FXCollections.observableArrayList(gameStrings);
             gameList.setItems(list);
 
@@ -91,7 +91,7 @@ public class ReplayController {
                                 HBox hbox = new HBox(10.0);
 
                                 Button button = getButton(item);
-                                Label label = new Label("GAME " + (getIndex() + 1) + " - " + item);
+                                Label label = new Label("GAME " + (getIndex() + 1) + " - " + item); //show game index + the game details
                                 hbox.getChildren().add(label);
                                 hbox.getChildren().add(button);
                                 HBox.setHgrow(label, Priority.ALWAYS);
@@ -120,6 +120,11 @@ public class ReplayController {
                     };
                 }
             });
+        }else{
+            gameList.setStyle("-fx-background-color: tan");
+            Label placeHolder = new Label("No Games Available");
+            placeHolder.setStyle("-fx-font-size: 25");
+            gameList.setPlaceholder(placeHolder);
         }
     }
 
