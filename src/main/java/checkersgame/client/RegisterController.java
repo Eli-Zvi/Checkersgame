@@ -14,6 +14,7 @@ import java.rmi.RemoteException;
 import java.security.GeneralSecurityException;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * <b>This class represents the register scene's controller</b><br>
@@ -25,7 +26,7 @@ import java.util.UUID;
  * </ol>
  *
  * @author Ilay Zvi
- */
+ */ //TODO ADD LANGUAGE DETECTION
 public class RegisterController {
     @FXML
     private Button homeSceneButton, loginButton, registerButton;
@@ -67,7 +68,7 @@ public class RegisterController {
             String password = passLoginField.getText();
             clearLoginFields();
 
-            if (username.length() > 3 && password.length() > 7 && password.length() < 17 && username.length() < 17){
+            if (isValidUsername(username) && isValidPassword(password)){
                 Client client = Client.getInstance();
                 CallBackImpl callBack = client.getCallback();
 
@@ -122,10 +123,12 @@ public class RegisterController {
 
             if(!password.equals(passwordCon)){ //if the 2 password fields are not equal display error
                 alert(Alert.AlertType.ERROR,"Registration Error", "Passwords do not match").show();
-            }else if(password.length() < 8 || password.length() > 16){ //if the password's length is invalid display error
-                alert(Alert.AlertType.ERROR,"Registration Error", "Password length must be between 8 and 16").show();
-            }else if(username.length() < 4 || username.length() > 16){ //if username's length is invalid display error
-                alert(Alert.AlertType.ERROR,"Registration Error", "Username length must be between 4 and 16").show();
+            }else if(!isValidPassword(password)){ //if the is invalid
+                alert(Alert.AlertType.ERROR,"Registration Error", "Invalid password, please follow" +
+                        "the rules in the user guide").show();
+            }else if(!isValidUsername(username)){ //if username's is invalid
+                alert(Alert.AlertType.ERROR,"Registration Error", "Invalid username, please follow" +
+                        "the rules in the user guide").show();
             }else {
                 Client client = Client.getInstance();
                 CallBackImpl callBack = client.getCallback();
@@ -192,6 +195,38 @@ public class RegisterController {
         passConRegisterField.setDisable(true);
         nameLoginField.setDisable(true);
         userRegisterField.setDisable(true);
+    }
+
+    /**
+     * Checks if a password follows the following rules:
+     * <ul>
+     *     <li>A password must be of size 8-16</li>
+     *     <li>A password must not contain any other alphabet except for the english alphabet</li>
+     *     <li>A password must contain at least one or more english letters</li>
+     *     <li>A password must contain at least one or more digits</li>
+     *     <li>A password must contain at least one or more special characters out of the following: !@#$%^&*</li>
+     * </ul>
+     * @param password a password to check the validity of
+     * @return true if the password is valid, false otherwise
+     */
+    private boolean isValidPassword(String password){
+        return Pattern.matches("^(?=.*[A-Za-z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,16}$",password);
+    }
+
+    /**
+     * Checks if a username follows the following rules:
+     * <ul>
+     *     <li>A username must be of size 4-16</li>
+     *     <li>A password must not contain any other alphabet except for the english alphabet</li>
+     *     <li>A password must contain at least one english letter</li>
+     *     <li>A password may contain one or more digits</li>
+     *     <li>A password may contain one or more of the following special characters: !@#$%^&*</li>
+     * </ul>
+     * @param username a username to check the validity of
+     * @return true if the username is valid, false otherwise
+     */
+    private boolean isValidUsername(String username){
+        return Pattern.matches("^(?=.*[A-Za-z])[A-Za-z0-9!@#$%^&*]{4,16}$",username);
     }
 
     /**

@@ -109,8 +109,8 @@ public class ReplayController {
                             button.setOnAction(event -> {
                                 gameList.setVisible(false);
                                 initializeBoard(item.gameID());
-                                player1Label.setText(item.player1());
-                                player2Label.setText(item.player2());
+                                player1Label.setText("BLACK: " + item.player1());
+                                player2Label.setText("RED: " + item.player2());
                                 player1Label.setVisible(true);
                                 player2Label.setVisible(true);
                                 gameOverLabel.setText(item.winner() + " WINS");
