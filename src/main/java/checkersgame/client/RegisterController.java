@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * @author Ilay Zvi
- */ //TODO ADD LANGUAGE DETECTION
+ */
 public class RegisterController {
     @FXML
     private Button homeSceneButton, loginButton, registerButton;

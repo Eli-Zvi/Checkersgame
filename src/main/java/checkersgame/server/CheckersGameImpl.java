@@ -7,7 +7,15 @@ import java.rmi.server.UnicastRemoteObject;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.UUID;
-//TODO ADD DOCUMENTATION AND LOCKS AND STATE CONTROL MAYBE ON BOARD SIDE
+/**
+ * <b>CheckersGameImpl is a class responsible for managing the game logic and communication between the server and the clients
+ * during a game of checkers.</b>
+ *
+ * <p>
+ * The class handles player information retrieval, player interactions such as performing moves and captures,
+ * and notifies clients during game status changes.
+ * </p>
+ */
 public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGame {
 
     private final Board board; // the instance of the game's board
@@ -38,11 +46,11 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
     }
 
     /**
-     *
-     * @param move
+     * Receives a regular move to perform from a player
+     * @param move the move to perform
      * @throws RemoteException if the move doesn't exist in the list of possible moves or a connection error occurs
      */
-    @Override //lock
+    @Override
     public synchronized void attemptMove(LinkedList<MoveInfo> move) throws RemoteException{
         Utils.Turn curr = this.board.getCurrentTurn();
         boolean promotion = this.board.attemptMove(move);
@@ -57,8 +65,8 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
     }
 
     /**
-     *
-     * @param move
+     * Receives a capture move to perform from a player
+     * @param move the move to perform
      * @throws RemoteException if the move doesn't exist in the list of possible moves or a connection error occurs
      */
     @Override

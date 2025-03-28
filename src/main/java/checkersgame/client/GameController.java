@@ -22,9 +22,14 @@ import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.sql.SQLException;
 import java.util.*;
-//TODO ADD DOCUMENTATION AND CHECK FOR LOCKS
 /**
- * 
+ * <b>GameController is a class responsible for managing the UI logic and communication between the client and the server
+ * during a game of checkers.</b>
+ *
+ * <p>
+ * The class manages aspects such as initializing the game board and ui, updating the board after a move was made,
+ * and displaying the possible moves delivered by the server when applicable.
+ * </p>
  */
 public class GameController{
     private Turn currentTurn = null;
