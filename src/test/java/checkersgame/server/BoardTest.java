@@ -8,6 +8,9 @@ import static checkersgame.common.Utils.*;
 
 import java.rmi.RemoteException;
 import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,6 +22,7 @@ class BoardTest {
     void setUp() {
         // Initialize the Board instance before each test
         board = new Board();
+        board.printBoard();
         board.updatePossibleMoves();
     }
 
@@ -68,5 +72,53 @@ class BoardTest {
         board.attemptCapture(captureMoves);
         assertNotNull(board.getBoard()[captureMoves.getLast().newRow()][captureMoves.getLast().newCol()],
                 "The capture move should be valid.");
+    }
+
+    @Test
+    void testFullGame() throws RemoteException{
+        Random rand = new Random();
+        int count = 0;
+        Queue<LinkedList<MoveInfo>> player1Queue = new LinkedList<>();
+        Queue<LinkedList<MoveInfo>> player2Queue = new LinkedList<>();
+        Set<LinkedList<MoveInfo>> captureMoves;
+        while(board.checkWin() == Board.GameState.ONGOING && !board.getPossibleMoves().isEmpty()) {
+            count++;
+            System.out.println("------------------------------------");
+
+            captureMoves = board.getPossibleMoves().keySet();
+
+            LinkedList<MoveInfo> move = captureMoves.stream().skip(rand.nextInt(captureMoves.size())).findFirst().orElse(null);
+
+            if(player1Queue.size() == 5){
+                player1Queue.remove();
+            }
+            if(player2Queue.size() == 5){
+                player2Queue.remove();
+            }
+
+            while(((player1Queue.contains(move) && count % 2 == 0) || (player2Queue.contains(move) && count % 2 == 1))
+                    && captureMoves.size() > 3 && move.size() == 1) {
+                move = captureMoves.stream().skip(rand.nextInt(captureMoves.size())).findFirst().orElse(null);
+                assertNotNull(move);
+            }
+
+            if(count % 2 == 0){
+                player1Queue.offer(move);
+            }else player2Queue.offer(move);
+
+            if(Math.abs(move.getFirst().newCol() - move.getFirst().currentCol()) == 2)
+                board.attemptCapture(move);
+            else board.attemptMove(move);
+
+            board.printBoard();
+            board.updatePossibleMoves();
+        }
+        System.out.println(count);
+        if (board.getPossibleMoves().isEmpty()){
+            System.out.println("No Possible Moves");
+            System.out.println(board.getCurrentTurn().equals(Turn.BLACK) ? "White Wins" : "Black Wins");
+        }else{
+            System.out.println(board.checkWin().equals(Board.GameState.PLAYER2WIN) ? "White Wins" : "Black Wins");
+        }
     }
 }

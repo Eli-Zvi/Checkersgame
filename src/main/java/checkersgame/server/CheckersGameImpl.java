@@ -12,8 +12,7 @@ import java.util.UUID;
  * during a game of checkers.</b>
  *
  * <p>
- * The class handles player information retrieval, player interactions such as performing moves and captures,
- * and notifies clients during game status changes.
+ * It handles player interactions, moves, captures, game state management, and notifies clients about the game status.
  * </p>
  */
 public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGame {
@@ -214,11 +213,19 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
 
             //notify the players according to the current player turn
             if (turn == Utils.Turn.WHITE) {
-                client2.notifyTurnAndUpdate(turn, this.board.getPossibleMoves());
-                client1.notifyTurnAndUpdate(null, null);
+                if (!board.getPossibleMoves().isEmpty()) {
+                    client2.notifyTurnAndUpdate(turn, this.board.getPossibleMoves());
+                    client1.notifyTurnAndUpdate(null, null);
+                }else{
+                    notifyClients(true); //if no moves are possible, the player has lost
+                }
             } else {
-                client1.notifyTurnAndUpdate(turn, this.board.getPossibleMoves());
-                client2.notifyTurnAndUpdate(null, null);
+                if (!board.getPossibleMoves().isEmpty()) {
+                    client1.notifyTurnAndUpdate(turn, this.board.getPossibleMoves());
+                    client2.notifyTurnAndUpdate(null, null);
+                }else{
+                    notifyClients(false); //if no moves are possible, the player has lost
+                }
             }
         }
     }

@@ -122,9 +122,9 @@ public class DatabaseManager {
                 "PLAYER2_UUID CHAR(36) NOT NULL, " + // PLAYER2 UUID
                 "STATUS BINARY(1) DEFAULT FALSE, " + // STATUS -  0 = ONGOING, 1 = CONCLUDED
                 "WINNER_UUID CHAR(36), " + //UUID OF WINNER (NULL INITIALLY)
-                "CONSTRAINT fk_player1 FOREIGN KEY (PLAYER1_UUID) REFERENCES players(UUID)," + //ensures player exists in players table
-                "CONSTRAINT fk_player2 FOREIGN KEY (PLAYER2_UUID) REFERENCES players(UUID)," + //ensures player exists in players table
-                "CONSTRAINT fk_winner FOREIGN KEY (WINNER_UUID) REFERENCES players(UUID)" + //ensures player exists in players table
+                "CONSTRAINT FK_PLAYER1 FOREIGN KEY (PLAYER1_UUID) REFERENCES players(UUID)," + //ensures player exists in players table
+                "CONSTRAINT FK_PLAYER2 FOREIGN KEY (PLAYER2_UUID) REFERENCES players(UUID)," + //ensures player exists in players table
+                "CONSTRAINT FK_WINNER FOREIGN KEY (WINNER_UUID) REFERENCES players(UUID)" + //ensures player exists in players table
                 ")";
 
         String createMoveTable = "CREATE TABLE IF NOT EXISTS MOVES (" +
@@ -135,9 +135,9 @@ public class DatabaseManager {
                 "FROM_POSITION VARCHAR(3) NOT NULL," +
                 "TO_POSITION VARCHAR(3) NOT NULL," +
                 "PROMOTION BINARY(1) DEFAULT FALSE," +
-                "FOREIGN KEY (GAME_ID) REFERENCES GAMES(ID)," +
-                "FOREIGN KEY (PLAYER_UUID) REFERENCES PLAYERS(UUID)," +
-                "UNIQUE(GAME_ID, MOVE_NUMBER)" +
+                "CONSTRAINT FK_GAME FOREIGN KEY (GAME_ID) REFERENCES GAMES(ID)," +
+                "CONSTRAINT FK_PLAYER FOREIGN KEY (PLAYER_UUID) REFERENCES PLAYERS(UUID)," +
+                "UNIQUE(GAME_ID, MOVE_NUMBER)" + //make sure we have a unique number for each game
                 ")";
 
         try(Statement statement = connection.createStatement()) {

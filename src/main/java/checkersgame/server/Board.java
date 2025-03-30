@@ -318,7 +318,7 @@ public class Board {
      * ex: possibleMoves has the move 2,2 -> 4,4 checks if captures can be done from 4,4 to a double diagonal tile
      */
     private void checkMultipleCaptures(){
-        // key - the list of moves that lead to the board state, value - a board state
+        // key - the list of moves that lead to the board state, value - a board state,
         Queue<Pair<LinkedList<MoveInfo>, Board>> infoBoard = new LinkedList<>();
         Map<LinkedList<MoveInfo>, int[]> toAdd = new HashMap<>();
 
