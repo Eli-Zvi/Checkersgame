@@ -97,7 +97,8 @@ public class RegisterController {
                     if(e instanceof SQLException){
                         alert(Alert.AlertType.ERROR,"Login Error", "Invalid Username or Password").show();
                     }else{
-                        alert(Alert.AlertType.ERROR,"Authentication Error", "An unknown error has occurred").show();
+                        alert(Alert.AlertType.ERROR,"Authentication Error", "An unknown error has occurred please reconnect").show();
+                        System.exit(-1);
                     }
                 }
             }else{
@@ -159,7 +160,8 @@ public class RegisterController {
                     if (e instanceof SQLException) {
                         alert(Alert.AlertType.ERROR,"Registration Error", "Username already exists").show();
                     } else {
-                        alert(Alert.AlertType.ERROR,"Authentication Error", "An unknown error has occurred").show();
+                        alert(Alert.AlertType.ERROR,"Authentication Error", "An unknown error has occurred please reconnect").show();
+                        System.exit(-1);
                     }
                 }
             }

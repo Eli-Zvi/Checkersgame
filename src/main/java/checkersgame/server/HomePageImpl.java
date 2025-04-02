@@ -80,6 +80,8 @@ public class HomePageImpl extends UnicastRemoteObject implements HomePage {
             Player player = new Player(client, key);
             userManager.addClient(client, player);
         } catch (GeneralSecurityException e) {
+            // throw an exception to client that will disconnect them
+            logger.error("An error has occurred during client callback registration");
             throw new RuntimeException(e);
         }
     }
@@ -244,6 +246,7 @@ public class HomePageImpl extends UnicastRemoteObject implements HomePage {
 
                    try(Connection connection = databaseManager.getConnection()){
                        databaseManager.deleteGame(connection, gameID);
+                       logger.info("Game with ID: {} has been successfully deleted after one or more players have disconnected", gameID);
                    }catch (SQLException ignored){}
                }
            } catch (RemoteException | NotBoundException ignored){}
@@ -321,6 +324,7 @@ public class HomePageImpl extends UnicastRemoteObject implements HomePage {
         try(Connection connection = databaseManager.getConnection()) {
             return databaseManager.getPlayerWinRate(connection, userManager.findByCallback(client).getPlayerUUID());
         } catch (SQLException e) {
+            logger.error("An error has occurred while fetching client's win rate, client ID: {}", userManager.findByCallback(client).getPlayerUUID());
             return "Error getting win rate";
         }
     }

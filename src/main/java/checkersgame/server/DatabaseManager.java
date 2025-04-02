@@ -237,6 +237,7 @@ public class DatabaseManager {
 
             connection.commit();
         }catch (SQLException e){
+            logger.error("An error has occurred during disconnection of user with ID: {}", player);
             connection.rollback();
         }
         finally {
@@ -281,6 +282,7 @@ public class DatabaseManager {
             connection.commit();
             logger.info("New game started with id {}", gameUUID);
         }catch (SQLException e){
+            logger.error("An error has occurred while starting game with ID: {}", gameUUID);
             connection.rollback();
             throw e;
         }finally {
@@ -343,6 +345,7 @@ public class DatabaseManager {
             connection.commit();
             logger.info("Game {} has been finalized", gameID);
         }catch (SQLException e){
+            logger.error("An error has occurred during the cleanup of game with ID: {}", gameID);
             connection.rollback();
             throw e;
         }finally {
