@@ -359,20 +359,6 @@ public class HomePageImpl extends UnicastRemoteObject implements HomePage {
     }
 
     /**
-     * <p>Adds a move with the given parameters to the MOVES table</p>
-     * for more details see DatabaseManager's addMove method
-     * @return the latest moveNumber
-     */
-    protected static int addMove(UUID gameID, UUID playerID, int moveNumber, LinkedList<MoveInfo> move, boolean promotion)
-            throws SQLException{
-        DatabaseManager instance = DatabaseManager.getInstance();
-
-        try(Connection connection = instance.getConnection()) {
-            return instance.addMove(connection, gameID, playerID, moveNumber, move, promotion);
-        }
-    }
-
-    /**
      * Fetches a list of FinishedGames from the database and returns it
      * @return a list containing FinishedGames or an empty list
      */

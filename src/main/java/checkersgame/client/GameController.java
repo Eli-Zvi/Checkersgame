@@ -231,7 +231,7 @@ public class GameController{
         if(currentTurn != null && currentTurn.getColor().equals(temp.getPiece().getColor())) {
             removeHighlights();
             currentPiece = (StackPane) temp.getParent();
-            attemptMove(temp);
+            displayMoves(temp);
         }
     }
 
@@ -287,7 +287,7 @@ public class GameController{
      * Displays the possible moves of a piece that has been clicked
      * @param piece the piece that was clicked
      */
-    private void attemptMove(PieceUI piece){
+    private void displayMoves(PieceUI piece){
         int[] position;
 
         try {

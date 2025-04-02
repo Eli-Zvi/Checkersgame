@@ -33,15 +33,15 @@ public class DatabaseManager {
      * @throws SQLException if an error occurs during initialization
      */
     private DatabaseManager() throws SQLException {
-        //username and password are not safe - only meant as an example
         HikariConfig config = new HikariConfig();
 
-        config.setJdbcUrl("jdbc:mysql://localhost:3306/checkersgame");
-        config.setUsername("root");
-        config.setPassword("root");
+        config.setJdbcUrl(System.getenv("DB_URL"));
+        config.setUsername(System.getenv("DB_USERNAME"));
+        config.setPassword(System.getenv("DB_PASS"));
 
         config.setMaximumPoolSize(MAX_POOL_SIZE);
-        config.setIdleTimeout(CONNECTION_TIMEOUT);
+        config.setIdleTimeout(CONNECTION_TIMEOUT); // return connection to pool after one cycle
+        config.setConnectionTimeout(CONNECTION_TIMEOUT * 2); // wait upto 2 cycles until throwing an exception
 
         ds = new HikariDataSource(config);
 
@@ -94,6 +94,7 @@ public class DatabaseManager {
 
     /**
      * Establishes a connection with datasource and returns it
+     * Hikari thread pooling is thread safe
      * @return get a connection from the connection pool
      */
     public Connection getConnection() throws SQLException {

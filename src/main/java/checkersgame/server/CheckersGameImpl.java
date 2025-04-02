@@ -4,6 +4,7 @@ import checkersgame.common.*;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -54,7 +55,7 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
         Utils.Turn curr = this.board.getCurrentTurn();
         boolean promotion = this.board.attemptMove(move);
         try {
-            moveNumber = HomePageImpl.addMove(ID,
+            moveNumber = addMove(ID,
                     curr.equals(Utils.Turn.BLACK) ? player1.getPlayerUUID() : player2.getPlayerUUID(),
                     moveNumber, move, promotion);
         } catch (SQLException e) {
@@ -74,7 +75,7 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
         boolean promotion = this.board.attemptCapture(move);
 
         try {
-            moveNumber = HomePageImpl.addMove(ID,
+            moveNumber = addMove(ID,
                     curr.equals(Utils.Turn.BLACK) ? player1.getPlayerUUID() : player2.getPlayerUUID(),
                     moveNumber, move, promotion);
         } catch (SQLException e) {
@@ -227,6 +228,20 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
                     notifyClients(false); //if no moves are possible, the player has lost
                 }
             }
+        }
+    }
+
+    /**
+     * <p>Adds a move with the given parameters to the MOVES table</p>
+     * for more details see DatabaseManager's addMove method
+     * @return the latest moveNumber
+     */
+    private int addMove(UUID gameID, UUID playerID, int moveNumber, LinkedList<MoveInfo> move, boolean promotion)
+            throws SQLException{
+        DatabaseManager instance = DatabaseManager.getInstance();
+
+        try(Connection connection = instance.getConnection()) {
+            return instance.addMove(connection, gameID, playerID, moveNumber, move, promotion);
         }
     }
 }

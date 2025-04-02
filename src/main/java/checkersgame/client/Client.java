@@ -41,12 +41,25 @@ public class Client{
      * @throws GeneralSecurityException - if failure occurs during key creation
      */
     private Client() throws RemoteException, GeneralSecurityException, InterruptedException {
+        initializeRegistry();
+        initializeHomeStub();
+
+        this.key = KeyUtils.generateAESKey(); //create aes key
+        callback = new CallBackImpl(); //create callback
+
+        //register with server
+        homeStub.registerCallBack(callback, KeyUtils.rsaEncrypt(key,KeyUtils.base64ToPublicKey(homeStub.getServerPublicKey())));
+    }
+
+    /**
+     * Initializes client registry
+     */
+    private void initializeRegistry() throws InterruptedException {
         int retries = 0;
 
         while(registry == null) { //establish connection with server
             try {
                 registry = LocateRegistry.getRegistry("localhost", 1099);
-
             }catch (RemoteException ignored){
                 if (retries == RETRY_ATTEMPTS)
                     throw new RuntimeException();
@@ -55,8 +68,13 @@ public class Client{
                 retries++;
             }
         }
+    }
 
-        retries = 0;
+    /**
+     * Initializes client home stub
+     */
+    private void initializeHomeStub() throws InterruptedException{
+        int retries = 0;
 
         while(homeStub == null) { //establish connection with landing page
             try{
@@ -69,12 +87,6 @@ public class Client{
                 retries++;
             }
         }
-
-        this.key = KeyUtils.generateAESKey(); //create aes key
-        callback = new CallBackImpl(); //create callback
-
-        //register with server
-        homeStub.registerCallBack(callback, KeyUtils.rsaEncrypt(key,KeyUtils.base64ToPublicKey(homeStub.getServerPublicKey())));
     }
 
     /**
