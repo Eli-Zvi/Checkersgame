@@ -14,9 +14,7 @@ import java.rmi.registry.Registry;
  */
 public class ServerMain {
     public static void main(String[] args) {
-
         try{
-
             //initialize registry
             Registry registry = LocateRegistry.createRegistry(1099);
             //initialize homepage

@@ -68,8 +68,14 @@ public class ReplayController {
      * <p>Requests the list of replayable games from the server and displays them</p>
      */
     @FXML
-    private void initialize() throws RemoteException {
-        ArrayList<FinishedGame> gameStrings = Client.getInstance().getHomeStub().getReplayableGames();
+    private void initialize(){
+        ArrayList<FinishedGame> gameStrings;
+        try {
+             gameStrings = Client.getInstance().getHomeStub().getReplayableGames();
+        }catch (RemoteException e){
+            SceneManager.displayNetworkError();
+            return;
+        }
 
         if(gameStrings != null && !gameStrings.isEmpty()) {
             ObservableList<FinishedGame> list = FXCollections.observableArrayList(gameStrings);

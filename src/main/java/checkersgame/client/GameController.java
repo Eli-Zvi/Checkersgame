@@ -55,7 +55,7 @@ public class GameController{
      * Initializes GameController
      */
     @FXML
-    private void initialize() throws RemoteException, InterruptedException {
+    private void initialize() throws InterruptedException {
         createGameStub();
         initializeBoard();
         initializeUI();
@@ -64,18 +64,22 @@ public class GameController{
     /**
      * Initializes the game UI including player names, board, sets unnecessary labels to be invisible
      */
-    private void initializeUI() throws RemoteException {
-        gameStub.playerReady(callback);
+    private void initializeUI(){
+        try {
+            gameStub.playerReady(callback);
 
-        UIBoard.setVisible(true);
+            UIBoard.setVisible(true);
 
-        gameOverLabel.setVisible(false);
-        joinGameButton.setVisible(false);
-        homeScreenButton.setVisible(false);
-        statusLabel.setVisible(false);
+            gameOverLabel.setVisible(false);
+            joinGameButton.setVisible(false);
+            homeScreenButton.setVisible(false);
+            statusLabel.setVisible(false);
 
-        player1Label.setText("BLACK: " + gameStub.getPlayer1Name());
-        player2Label.setText("RED: " + gameStub.getPlayer2Name());
+            player1Label.setText("BLACK: " + gameStub.getPlayer1Name());
+            player2Label.setText("RED: " + gameStub.getPlayer2Name());
+        }catch (RemoteException e){
+            SceneManager.displayNetworkError();
+        }
     }
 
     /**
@@ -89,7 +93,8 @@ public class GameController{
             board = gameStub.getBoard();
             pieceColor = gameStub.getPlayerColor(callback); //get player's color
         } catch (RemoteException e) {
-            throw new RuntimeException(e);
+            SceneManager.displayNetworkError();
+            return;
         }
 
         Platform.runLater(()-> {
@@ -154,7 +159,7 @@ public class GameController{
                 gameStub = (CheckersGame) registry.lookup(game_name);
             }catch (RemoteException | NotBoundException e) {
                 if (retries == RETRY_ATTEMPTS)
-                    throw new RuntimeException();
+                    SceneManager.displayNetworkError();
                 Thread.sleep(10000);
                 retries++;
             }
@@ -250,11 +255,9 @@ public class GameController{
             }
             currentTurn = null; //set the current turn to null and await server update
             possibleMoves = null; //set the possibleMoves to null and await server update
-        }catch (RemoteException e) {
-            System.out.println("RemoteException");
-        } catch (InterruptedException | NotBoundException e) {
-            throw new RuntimeException(e);
-        }
+        }catch (RemoteException | NotBoundException e) {
+            SceneManager.displayNetworkError();
+        } catch (InterruptedException ignored){}
     }
 
     /**
@@ -422,7 +425,7 @@ public class GameController{
      * Join button on action function, disables all buttons and displays In Queue message, requests server to join game
      */
     @FXML
-    void joinButtonOnAction(ActionEvent event) throws RemoteException {
+    void joinButtonOnAction(ActionEvent event){
         try{
             joinGameButton.setDisable(true);
             homeScreenButton.setDisable(true);
@@ -431,6 +434,8 @@ public class GameController{
             Client.getInstance().getHomeStub().joinGame(Client.getInstance().getCallback());
         }catch (SQLException e){
             e.printStackTrace();
+        }catch (RemoteException e){
+            SceneManager.displayNetworkError();
         }
     }
 
@@ -438,8 +443,12 @@ public class GameController{
      * Forfeit on action function, sends a request to server to forfeit the game
      */
     @FXML
-    void forfeitOnAction(ActionEvent event) throws NotBoundException, RemoteException {
-        gameStub.forfeit(callback);
+    void forfeitOnAction(ActionEvent event){
+        try {
+            gameStub.forfeit(callback);
+        }catch (NotBoundException | RemoteException e){
+            SceneManager.displayNetworkError();
+        }
     }
 
     private void printBoard(){

@@ -32,7 +32,7 @@ public class DatabaseManager {
      * Initializes instance of DatabaseManager and calls onto initializeDatabase
      * @throws SQLException if an error occurs during initialization
      */
-    private DatabaseManager() throws SQLException {
+    private DatabaseManager() throws SQLException { //TODO ADD A WAY TO MAKE A SCHEMA IF IT DOESN'T EXIST
         HikariConfig config = new HikariConfig();
 
         config.setJdbcUrl(System.getenv("DB_URL"));

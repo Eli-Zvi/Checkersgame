@@ -2,6 +2,7 @@ package checkersgame.client;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -68,5 +69,10 @@ public class SceneManager {
         stage.setScene(_scene);
         stage.show();
         fxmlLoader.getController();
+    }
+
+    public static void displayNetworkError(){
+        new Alert(Alert.AlertType.ERROR, "A Network Error Has Occurred, the program will now exit").showAndWait();
+        System.exit(-1);
     }
 }

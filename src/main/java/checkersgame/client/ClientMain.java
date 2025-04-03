@@ -18,7 +18,12 @@ public class ClientMain extends Application {
         Locale.setDefault(Locale.ENGLISH);
 
         SceneManager.initializeInstance(stage); //initialize scene manager
-        Client.initializeInstance(); //initialize client
+        try{
+            Client.initializeInstance(); //initialize client
+        }catch (Exception e){
+            System.out.println("An error has occurred while establishing connection with the server");
+            throw e;
+        }
 
         SceneManager sceneManager = SceneManager.getInstance();
         try{
