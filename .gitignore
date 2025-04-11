@@ -38,4 +38,4 @@ build/
 .DS_Store
 
 #ignore manifest and artifacts
-/src/main/resources/checkersgame.server/META-INF/
+/out/artifacts/CheckersGame_jar/Client/Checkers-Client.jar
