@@ -1,0 +1,31 @@
+services:
+  db:
+    image: mysql:8.0.41
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: CHECKERSGAME
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "localhost", "-u", "root", "-proot", "-e", "SELECT 1;"]
+      interval: 10s
+      retries: 10
+      timeout: 10s
+      start_period: 30s
+    volumes:
+      - db-data:/var/lib/mysql
+
+  server:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_HOST: db
+    ports:
+      - "1099:1099"
+
+volumes:
+  db-data:

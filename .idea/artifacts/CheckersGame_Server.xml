@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
   <artifact type="jar" name="CheckersGame:Server">
-    <output-path>$USER_HOME$/Desktop/test/Server</output-path>
+    <output-path>$PROJECT_DIR$/out/artifacts/CheckersGame_jar/Server</output-path>
     <root id="archive" name="Checkers-Server.jar">
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/checkersgame.server/META-INF/MANIFEST.MF" />
