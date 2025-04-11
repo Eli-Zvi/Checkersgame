@@ -24,17 +24,15 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * <p>The homepage part of the server, it serves as the landing page for a client during and post connection establishment
  * its responsibilities include the following:</p>
- * <ul>
- *     <ol>
- *         <li>Key exchange with the new client</li>
- *         <li>Adding the client to the user manager's client list</li>
- *         <li>Client registration and log in</li>
- *         <li>Communication with DatabaseManager for database queries</li>
- *         <li>Game Queue management and on going games management</li>
- *         <li>Initializing games</li>
- *         <li>Handling terminated connections</li>
- *     </ol>
- * </ul>
+ * <ol>
+ *     <li>Key exchange with the new client</li>
+ *     <li>Adding the client to the user manager's client list</li>
+ *     <li>Client registration and log in</li>
+ *     <li>Communication with DatabaseManager for database queries</li>
+ *     <li>Game Queue management and on going games management</li>
+ *     <li>Initializing games</li>
+ *     <li>Handling terminated connections</li>
+ * </ol>
  */
 public class HomePageImpl extends UnicastRemoteObject implements HomePage {
     private final static Logger logger = LoggerFactory.getLogger(HomePageImpl.class);
@@ -56,7 +54,7 @@ public class HomePageImpl extends UnicastRemoteObject implements HomePage {
      * @throws SQLException if database initialization is unsuccessful and will shut the server down
      */
     protected HomePageImpl(Registry registry) throws RemoteException, NoSuchAlgorithmException, SQLException{
-        super();
+        super(1099);
         databaseManager = DatabaseManager.getInstance();
         userManager = new UserManager();
         HomePageImpl.registry = registry;

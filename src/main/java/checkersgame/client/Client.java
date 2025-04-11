@@ -92,11 +92,9 @@ public class Client{
     /**
      * This method initializes singleton instance of the class Client
      */
-    public synchronized static void initializeInstance(){
+    public synchronized static void initializeInstance() throws GeneralSecurityException, RemoteException, InterruptedException {
         if(client == null){
-            try {
-                client = new Client();
-            }catch (RemoteException | GeneralSecurityException | InterruptedException ignored){}
+            client = new Client();
         }
     }
 

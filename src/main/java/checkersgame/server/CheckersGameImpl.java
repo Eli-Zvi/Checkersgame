@@ -36,7 +36,7 @@ public class CheckersGameImpl extends UnicastRemoteObject implements CheckersGam
      * @param ID the game ID
      */
     protected CheckersGameImpl(Player player1, Player player2, UUID ID) throws RemoteException {
-        super();
+        super(1099);
         this.player1 = player1;
         this.player2 = player2;
         this.client1 = player1.getCallBack();

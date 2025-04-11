@@ -2,6 +2,7 @@ package checkersgame.server;
 
 import checkersgame.common.MoveInfo;
 import checkersgame.common.Piece;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static checkersgame.common.Utils.*;
@@ -26,8 +27,13 @@ class BoardTest {
         board.updatePossibleMoves();
     }
 
+    @AfterEach
+    void tearDown(){
+        board = null;
+    }
+
     @Test
-    void testInitialBoardSetup() {
+    void shouldInitializeBoard() {
         // Test that the board is initialized correctly with non-null pieces
         Piece[][] pieces = board.getBoard();
         for (int row = 0; row < NUM_OF_ROWS; row++) {
@@ -58,7 +64,7 @@ class BoardTest {
     }
 
     @Test
-    void testAttemptMove() throws RemoteException {
+    void shouldPerformMove() throws RemoteException {
         // Test regular move
         LinkedList<MoveInfo> moves = board.getPossibleMoves().keySet().iterator().next(); // example valid move
         board.attemptMove(moves);
@@ -66,7 +72,7 @@ class BoardTest {
     }
 
     @Test
-    void testAttemptCapture() throws RemoteException {
+    void shouldPerformCapture() throws RemoteException {
         // Test a capture move
         LinkedList<MoveInfo> captureMoves = board.getPossibleMoves().keySet().iterator().next();
         board.attemptCapture(captureMoves);
@@ -75,7 +81,7 @@ class BoardTest {
     }
 
     @Test
-    void testFullGame() throws RemoteException{
+    void shouldPlayEntireGame() throws RemoteException{
         Random rand = new Random();
         int count = 0;
         Queue<LinkedList<MoveInfo>> player1Queue = new LinkedList<>();

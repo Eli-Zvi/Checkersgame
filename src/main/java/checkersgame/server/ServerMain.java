@@ -15,6 +15,9 @@ import java.rmi.registry.Registry;
 public class ServerMain {
     public static void main(String[] args) {
         try{
+            String hostname = System.getenv("DOCKER_ENV") != null ? "host.docker.internal" : "localhost";
+
+            System.setProperty("java.rmi.server.hostname", hostname);
             //initialize registry
             Registry registry = LocateRegistry.createRegistry(1099);
             //initialize homepage
@@ -24,6 +27,7 @@ public class ServerMain {
             registry.rebind("home", homePage);
             System.out.println("Checkers RMI Server is running...");
         } catch (Exception e) { // if homepage fails to initialize, close server
+            e.printStackTrace();
             System.out.println("Error during server initialization, exiting now");
             System.exit(-1);
         }

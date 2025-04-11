@@ -27,25 +27,51 @@ public class DatabaseManager {
     private static DatabaseManager instance;
     private final int MAX_POOL_SIZE = 20;
     private final int CONNECTION_TIMEOUT = 30000; //30 seconds
+    private final String hostName = System.getenv("DB_HOST") == null ? "localhost" : System.getenv("DB_HOST");
+    private final String dbUsername = System.getenv("DB_USERNAME");
+    private final String dbPassword = System.getenv("DB_PASSWORD");
 
     /**
      * Initializes instance of DatabaseManager and calls onto initializeDatabase
      * @throws SQLException if an error occurs during initialization
      */
-    private DatabaseManager() throws SQLException { //TODO ADD A WAY TO MAKE A SCHEMA IF IT DOESN'T EXIST
+    private DatabaseManager() throws SQLException {
+        createSchema();
         HikariConfig config = new HikariConfig();
 
-        config.setJdbcUrl(System.getenv("DB_URL"));
-        config.setUsername(System.getenv("DB_USERNAME"));
-        config.setPassword(System.getenv("DB_PASS"));
+        config.setJdbcUrl("jdbc:mysql://" + hostName + ":3306/CHECKERSGAME");
+        config.setUsername(dbUsername);
+        config.setPassword(dbPassword);
+
+        logger.info("Successfully connected to database");
 
         config.setMaximumPoolSize(MAX_POOL_SIZE);
-        config.setIdleTimeout(CONNECTION_TIMEOUT); // return connection to pool after one cycle
+        //config.setIdleTimeout(CONNECTION_TIMEOUT); // return connection to pool after one cycle
         config.setConnectionTimeout(CONNECTION_TIMEOUT * 2); // wait upto 2 cycles until throwing an exception
 
         ds = new HikariDataSource(config);
 
         initializeDatabase();
+        logger.info("Database successfully initialized");
+    }
+
+    private void createSchema() throws SQLException{
+        HikariConfig config = new HikariConfig();
+
+        config.setJdbcUrl("jdbc:mysql://" + hostName + ":3306/");
+        config.setUsername(dbUsername);
+        config.setPassword(dbPassword);
+
+        try(HikariDataSource ds = new HikariDataSource(config);
+            Connection c = ds.getConnection();
+            Statement statement = c.createStatement()){
+
+            statement.executeUpdate("CREATE DATABASE IF NOT EXISTS CHECKERSGAME");
+            logger.info("SCHEMA INITIALIZED");
+        }catch (SQLException e){
+            logger.error("FAILED TO INITIALIZE SCHEMA");
+            throw e;
+        }
     }
 
     /**
@@ -71,9 +97,9 @@ public class DatabaseManager {
             }
 
             connection.commit();
-            logger.info("DB connection established successfully");
         }catch (SQLException e){
-            logger.error("connection failed to initialize");
+            logger.error("connection failed to initialize {}", e.toString());
+            e.printStackTrace();
             if (connection != null)
                 connection.rollback();
 
@@ -106,6 +132,7 @@ public class DatabaseManager {
      * @param connection an established connection with the database
      */
     private static synchronized void createTables(Connection connection) throws SQLException {
+
         String createPlayersTable = "CREATE TABLE IF NOT EXISTS PLAYERS (" +
                 "UUID CHAR(36) PRIMARY KEY, " + // UUID is 16 bytes -> 36 bytes as string form
                 "USERNAME VARCHAR(16) NOT NULL UNIQUE, " + // allowing user upto 16 char long username
@@ -123,9 +150,9 @@ public class DatabaseManager {
                 "PLAYER2_UUID CHAR(36) NOT NULL, " + // PLAYER2 UUID
                 "STATUS BINARY(1) DEFAULT FALSE, " + // STATUS -  0 = ONGOING, 1 = CONCLUDED
                 "WINNER_UUID CHAR(36), " + //UUID OF WINNER (NULL INITIALLY)
-                "CONSTRAINT FK_PLAYER1 FOREIGN KEY (PLAYER1_UUID) REFERENCES players(UUID)," + //ensures player exists in players table
-                "CONSTRAINT FK_PLAYER2 FOREIGN KEY (PLAYER2_UUID) REFERENCES players(UUID)," + //ensures player exists in players table
-                "CONSTRAINT FK_WINNER FOREIGN KEY (WINNER_UUID) REFERENCES players(UUID)" + //ensures player exists in players table
+                "CONSTRAINT FK_PLAYER1 FOREIGN KEY (PLAYER1_UUID) REFERENCES PLAYERS(UUID)," + //ensures player exists in players table
+                "CONSTRAINT FK_PLAYER2 FOREIGN KEY (PLAYER2_UUID) REFERENCES PLAYERS(UUID)," + //ensures player exists in players table
+                "CONSTRAINT FK_WINNER FOREIGN KEY (WINNER_UUID) REFERENCES PLAYERS(UUID)" + //ensures player exists in players table
                 ")";
 
         String createMoveTable = "CREATE TABLE IF NOT EXISTS MOVES (" +
@@ -147,6 +174,9 @@ public class DatabaseManager {
             statement.addBatch(createMoveTable);
 
             statement.executeBatch();
+        }catch (SQLException e){
+            logger.error("An error occurred during table creation");
+            throw e;
         }
     }
 

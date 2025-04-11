@@ -64,7 +64,7 @@ public class HomeController {
     }
 
     @FXML
-    private void joinButtonOnAction(ActionEvent event) throws IOException{
+    private void joinButtonOnAction(ActionEvent event){
         try{
             joinGameButton.setDisable(true);
             loginSceneButton.setDisable(true);
@@ -75,8 +75,8 @@ public class HomeController {
             statusLabel.setText("In Queue");
 
             Client.getInstance().getHomeStub().joinGame(Client.getInstance().getCallback());
-        }catch (SQLException e){
-            e.printStackTrace();
+        }catch (SQLException | RemoteException e){
+            SceneManager.displayNetworkError();
         }
     }
 

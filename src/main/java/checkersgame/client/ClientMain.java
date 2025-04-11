@@ -20,16 +20,15 @@ public class ClientMain extends Application {
         SceneManager.initializeInstance(stage); //initialize scene manager
         try{
             Client.initializeInstance(); //initialize client
-        }catch (Exception e){
-            System.out.println("An error has occurred while establishing connection with the server");
-            throw e;
-        }
+            System.out.println("initialized client");
 
-        SceneManager sceneManager = SceneManager.getInstance();
-        try{
+            SceneManager sceneManager = SceneManager.getInstance();
+
             assert sceneManager != null;
             sceneManager.initializeScene("HomePage.fxml"); //initialize UI
         }catch (Exception e){
+            System.out.println("An error has occurred while establishing connection with the server");
+            e.printStackTrace();
             System.exit(-1);
         }
     }
