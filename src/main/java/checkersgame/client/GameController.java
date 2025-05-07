@@ -89,6 +89,7 @@ public class GameController{
         tileBoard = new StackPane[NUM_OF_ROWS][NUM_OF_COLUMNS];
         Piece [][] board;
 
+        //should've created a thread as this blocks the JavaFX thread, but blocking the user during initialization is fine
         try {
             board = gameStub.getBoard();
             pieceColor = gameStub.getPlayerColor(callback); //get player's color
@@ -97,6 +98,8 @@ public class GameController{
             return;
         }
 
+        //block JavaFX thread creates an unstable state(we stopped its "heartbeat" aka its event loop,
+        //but events still happen and are loaded into its queue) for JavaFX thread, and thus we need to call runLater
         Platform.runLater(()-> {
             //calculate the radius of each piece on the board based on the tile width and height
             this.tile_width = UIBoard.getWidth() / NUM_OF_COLUMNS;
@@ -220,10 +223,11 @@ public class GameController{
      * Removes all the highlights from the board
      */
     private void removeHighlights(){
-        for(StackPane stack : highlights.keySet()){
-            stack.getChildren().remove(highlights.get(stack));
+        for(StackPane pane : highlights.keySet()){
+            //for each pane in the highlights map, get the rectangle and remove it from the pane's children list
+            pane.getChildren().remove(highlights.get(pane));
         }
-
+        //clear the map
         highlights.clear();
     }
 

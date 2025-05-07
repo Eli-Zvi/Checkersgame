@@ -39,3 +39,4 @@ build/
 
 #ignore manifest and artifacts
 /out/artifacts/CheckersGame_jar/Client/Checkers-Client.jar
+/out/artifacts/CheckersGame_jar/Server/Checkers-Server.jar

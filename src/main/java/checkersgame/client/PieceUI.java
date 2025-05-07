@@ -5,6 +5,8 @@ import checkersgame.common.Piece;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+import java.util.Objects;
+
 /**
  * <b>This class represents a UI piece on the user's board</b><br>
  *
@@ -12,10 +14,10 @@ import javafx.scene.image.ImageView;
  */
 public class PieceUI extends ImageView {
     //preload images
-    private static final Image redKing = new Image(PieceUI.class.getResource("/checkersgame/client/red_king.png").toExternalForm());
-    private static final Image redPiece = new Image(PieceUI.class.getResource("/checkersgame/client/red_piece.png").toExternalForm());
-    private static final Image blackPiece = new Image(PieceUI.class.getResource("/checkersgame/client/black_piece.png").toExternalForm());
-    private static final Image blackKing = new Image(PieceUI.class.getResource("/checkersgame/client/black_king.png").toExternalForm());
+    private static final Image redKing = new Image(Objects.requireNonNull(PieceUI.class.getResource("/checkersgame/client/red_king.png")).toExternalForm());
+    private static final Image redPiece = new Image(Objects.requireNonNull(PieceUI.class.getResource("/checkersgame/client/red_piece.png")).toExternalForm());
+    private static final Image blackPiece = new Image(Objects.requireNonNull(PieceUI.class.getResource("/checkersgame/client/black_piece.png")).toExternalForm());
+    private static final Image blackKing = new Image(Objects.requireNonNull(PieceUI.class.getResource("/checkersgame/client/black_king.png")).toExternalForm());
     private final Piece piece;
 
 
