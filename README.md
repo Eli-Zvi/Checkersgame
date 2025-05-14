@@ -20,7 +20,7 @@ docker-compose up -d
 
 ### Method 2 - Manual with MySQL:
 
-### If the MYSQL database requires login information:
+### If the MySQL database requires login information:
 > set or create the DB_USERNAME and DB_PASSWORD environment variables to your databases' username and password
 ### Start the MySQL Service
 #### WINDOWS:
