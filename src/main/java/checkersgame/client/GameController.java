@@ -215,7 +215,7 @@ public class GameController{
         Rectangle highlight = new Rectangle(tile_width, tile_height);
         highlight.setFill(Color.GREEN);
         highlight.setOpacity(0.3);
-        piecePane.getChildren().add(PIECE_INDEX, highlight);
+        piecePane.getChildren().add(PIECE_INDEX, highlight); //add between tile and piece to not block the piece's image
         highlights.put(piecePane, highlight);
     }
 

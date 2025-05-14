@@ -16,7 +16,7 @@ public class ServerMain {
     public static void main(String[] args) {
         try{
             String hostname = System.getenv("DOCKER_ENV") != null ? "host.docker.internal" : "localhost";
-
+            //set host based on the environment that is running it, if docker is running it, it will set it to the host's ip
             System.setProperty("java.rmi.server.hostname", hostname);
             //initialize registry
             Registry registry = LocateRegistry.createRegistry(1099);

@@ -166,7 +166,7 @@ public class Board {
      * @param col the col of the piece
      */
     public void removePiece(int row, int col) {
-        board[row][col].setColor(null);
+        board[row][col].setColor(null); //nullifies the color of the Piece, which makes it into an empty tile
         board[row][col].demote();
     }
 

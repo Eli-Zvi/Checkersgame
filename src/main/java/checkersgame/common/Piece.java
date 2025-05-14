@@ -7,6 +7,7 @@ import checkersgame.common.Utils.PieceColor;
  * <b>This class represents a piece on the game board</b><br>
  *
  * <p>The Piece class is responsible for storing the color, and rank of the piece</p>
+ * <p>A Piece with no color signifies a tile</p>
  *
  * @author Ilay Zvi
  */
@@ -25,7 +26,7 @@ public class Piece implements Serializable {
     }
 
     /**
-     * Creates a new instance of Piece with no color
+     * Creates a new instance of Piece with no color - which is an empty tile
      */
     public Piece() {
         this.color = null;

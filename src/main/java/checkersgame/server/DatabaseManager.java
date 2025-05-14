@@ -58,7 +58,7 @@ public class DatabaseManager {
     private void createSchema() throws SQLException{
         HikariConfig config = new HikariConfig();
 
-        config.setJdbcUrl("jdbc:mysql://" + hostName + ":3306/");
+        config.setJdbcUrl("jdbc:mysql://" + hostName + ":3306/"); //connection without schema initialized
         config.setUsername(dbUsername);
         config.setPassword(dbPassword);
 
@@ -218,9 +218,9 @@ public class DatabaseManager {
             NoSuchAlgorithmException, InvalidKeySpecException {
 
         connection.setAutoCommit(false);
+        //lock table
         String selectPlayer = "SELECT UUID, PASSWORD, SALT, LOGGED_IN FROM PLAYERS WHERE USERNAME = ? FOR UPDATE";
         try(PreparedStatement statement = connection.prepareStatement(selectPlayer)) {
-            //lock table
 
             statement.setString(1, username);
             ResultSet resultSet = statement.executeQuery();
