@@ -36,7 +36,7 @@ public class GameController{
     private CheckersGame gameStub;
     private CallBackImpl callback;
     private StackPane currentPiece;
-    private StackPane [][] tileBoard; //stores the board's panes
+    private StackPane [][] tileBoard; //stores the board's panes, could be improved by creating an extension of StackPane and moving the methods related to it from this class
     private double tile_width, tile_height;
     private final HashMap<StackPane, Rectangle> highlights = new HashMap<>();
     private Map<LinkedList<MoveInfo>, int[]> possibleMoves;
